@@ -1,0 +1,28 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main   # change to master if needed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+
+        with:
+          host: 204.168.244.118
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/B2-AUTH-FE
+            git fetch origin
+            git reset --hard origin/main
+            npm install
+            npm run build
+            rm -rf /var/www/b2auth/*
+            cp -r dist/* /var/www/b2auth/
+            systemctl restart nginx

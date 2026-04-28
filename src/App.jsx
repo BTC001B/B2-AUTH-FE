@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
-const API_BASE = 'https://api.bnxmail.com/api';
+const API_BASE = import.meta.env.VITE_API_BASE;
 
 function App() {
   const [view, setView] = useState('login-email'); // login-email, login-password, signup-profile, signup-mail
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  console.log(API_BASE)
   
   // OAuth Context
   const [clientId, setClientId] = useState('');
