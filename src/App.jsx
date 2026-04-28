@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
-
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = 'https://api.bnxmail.com/api';
 
 function App() {
   const [view, setView] = useState('login-email'); // login-email, login-password, signup-profile, signup-mail
@@ -80,7 +79,7 @@ function App() {
           }
         } else {
           // Normal login redirect (fallback)
-          window.location.href = 'http://localhost:3001'; // Default Mail Dashboard
+          window.location.href = 'https://mail.bnxmail.com'; // Default Mail Dashboard
         }
       }
     } catch (err) {
