@@ -7,7 +7,6 @@ function App() {
   const [view, setView] = useState('login-email'); // login-email, login-password, signup-profile, signup-mail
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  console.log(API_BASE)
   
   // OAuth Context
   const [clientId, setClientId] = useState('');
