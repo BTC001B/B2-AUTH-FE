@@ -23,6 +23,7 @@ function App() {
     emailName: '',  // for bnxmail address
     otp: '',
     newPassword: '',
+    confirmPassword: '',
   });
 
   const [tempToken, setTempToken] = useState('');
@@ -44,7 +45,7 @@ function App() {
   // --- LOGIN FLOW ---
   const proceedToPassword = () => {
     if (!formData.identifier) {
-      setError('Enter an email or username');
+      setError('Enter an email');
       return;
     }
     setView('login-password');
@@ -188,7 +189,7 @@ function App() {
         method: method
       });
       if (res.data.success) {
-        setView('forgot-password-verify');
+        setView('forgot-password-otp');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP');
@@ -197,8 +198,41 @@ function App() {
     }
   };
 
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    if (!formData.otp || formData.otp.length < 6) {
+      setError('Please enter a valid 6-digit code');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post(`${API_BASE}/auth/forgot-password/verify-otp`, {
+        identifier: formData.identifier,
+        otp: formData.otp
+      });
+      if (res.data.success) {
+        setView('forgot-password-reset');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid or expired code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    if (formData.newPassword !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    if (formData.newPassword.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
@@ -209,7 +243,7 @@ function App() {
       });
       if (res.data.success) {
         setView('login-password');
-        setFormData({ ...formData, password: '', otp: '', newPassword: '' });
+        setFormData({ ...formData, password: '', otp: '', newPassword: '', confirmPassword: '' });
         alert('Password reset successfully. Please log in with your new password.');
       }
     } catch (err) {
@@ -233,7 +267,7 @@ function App() {
             {view === 'signup-profile' && 'Start your journey with BNX'}
             {view === 'signup-mail' && 'Choose your @bnxmail.com address'}
             {view === 'forgot-password-options' && 'Account Recovery'}
-            {view === 'forgot-password-verify' && 'Verify your identity'}
+            {view === 'forgot-password-otp' && 'Verify your identity'}
             {view === 'forgot-password-reset' && 'Create a new password'}
           </p>
         </div>
@@ -251,8 +285,9 @@ function App() {
                   value={formData.identifier}
                   onChange={handleInputChange}
                   required
+                  placeholder=" "
                 />
-                <label>Email or username</label>
+                <label>Email</label>
               </div>
               <div className="forgot-link">Forgot email?</div>
               <p className="helper-text">
@@ -281,6 +316,7 @@ function App() {
                   onChange={handleInputChange}
                   required
                   autoFocus
+                  placeholder=" "
                 />
                 <label>Enter your password</label>
               </div>
@@ -411,11 +447,11 @@ function App() {
             </div>
           )}
 
-          {/* FORGOT PASSWORD STEP 2: VERIFY AND RESET */}
-          {view === 'forgot-password-verify' && (
-            <form onSubmit={handleResetPassword} className="auth-step">
+          {/* FORGOT PASSWORD STEP 2: VERIFY OTP */}
+          {view === 'forgot-password-otp' && (
+            <form onSubmit={handleVerifyOtp} className="auth-step">
               <p className="helper-text" style={{marginBottom: '20px'}}>
-                Enter the verification code sent to your {selectedRecoveryMethod === 'EMAIL' ? 'email' : 'phone'}.
+                Enter the 6-digit verification code sent to your {selectedRecoveryMethod === 'EMAIL' ? 'email' : 'phone'}.
               </p>
               <div className="input-group">
                 <input
@@ -426,9 +462,25 @@ function App() {
                   required
                   autoFocus
                   maxLength="6"
+                  placeholder=" "
                 />
                 <label>Verification Code</label>
               </div>
+              <div className="auth-actions">
+                <button type="button" className="text-btn" onClick={() => setView('forgot-password-options')}>Back</button>
+                <button type="submit" className="primary-btn" disabled={loading}>
+                  {loading ? 'Verifying...' : 'Verify Code'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* FORGOT PASSWORD STEP 3: RESET PASSWORD */}
+          {view === 'forgot-password-reset' && (
+            <form onSubmit={handleResetPassword} className="auth-step">
+              <p className="helper-text" style={{marginBottom: '20px'}}>
+                Choose a strong, secure password that you don't use for other accounts.
+              </p>
               <div className="input-group">
                 <input
                   type="password"
@@ -436,11 +488,24 @@ function App() {
                   value={formData.newPassword}
                   onChange={handleInputChange}
                   required
+                  autoFocus
+                  placeholder=" "
                 />
                 <label>New Password</label>
               </div>
+              <div className="input-group">
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  required
+                  placeholder=" "
+                />
+                <label>Confirm Password</label>
+              </div>
               <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView('forgot-password-options')}>Back</button>
+                <button type="button" className="text-btn" onClick={() => setView('forgot-password-otp')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>
                   {loading ? 'Resetting...' : 'Reset Password'}
                 </button>
