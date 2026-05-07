@@ -12,6 +12,7 @@ function App() {
   const [clientId, setClientId] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
   const [state, setState] = useState('');
+  const [registrationMode, setRegistrationMode] = useState(''); // business, child, public
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -24,6 +25,15 @@ function App() {
     otp: '',
     newPassword: '',
     confirmPassword: '',
+    // Business specific
+    businessName: '',
+    businessType: '',
+    registrationNumber: '',
+    ownerFirstName: '',
+    ownerLastName: '',
+    domain: '',
+    // Child specific
+    dob: '',
   });
 
   const [tempToken, setTempToken] = useState('');
@@ -35,6 +45,7 @@ function App() {
     setClientId(params.get('client_id') || '');
     setRedirectUri(params.get('redirect_uri') || '');
     setState(params.get('state') || '');
+    setRegistrationMode(params.get('mode') || '');
   }, []);
 
   const handleInputChange = (e) => {
@@ -91,19 +102,50 @@ function App() {
   };
 
   // --- SIGNUP FLOW ---
-  const handleRegisterProfile = async (e) => {
+  const handleCreateAccountClick = () => {
+    if (registrationMode === 'business') {
+      setView('signup-business');
+    } else if (registrationMode === 'child') {
+      setView('signup-child');
+    } else if (registrationMode === 'public') {
+      setView('signup-profile');
+    } else {
+      setView('signup-selection');
+    }
+  };
+
+  const handleRegisterProfile = async (e, type = 'PERSONAL') => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    try {
-      const regRes = await axios.post(`${API_BASE}/auth/register`, {
-        username: formData.username,
-        password: formData.password,
+    let payload = {
+      username: formData.username,
+      password: formData.password,
+      mode: type
+    };
+
+    if (type === 'BUSINESS') {
+      payload = {
+        ...payload,
+        businessName: formData.businessName,
+        businessType: formData.businessType,
+        registrationNumber: formData.registrationNumber,
+        ownerFirstName: formData.ownerFirstName,
+        ownerLastName: formData.ownerLastName,
+        domain: formData.domain || 'bnxmail.com'
+      };
+    } else {
+      payload = {
+        ...payload,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        mode: 'PERSONAL'
-      });
+        dob: formData.dob // Will be used by backend to mark as CHILD if < 18
+      };
+    }
+
+    try {
+      const regRes = await axios.post(`${API_BASE}/auth/register`, payload);
 
       if (regRes.data.success) {
         setTempToken(regRes.data.data.tempToken);
@@ -264,7 +306,10 @@ function App() {
           <p>
             {view === 'login-email' && 'Use your BNX Account'}
             {view === 'login-password' && `Welcome, ${formData.identifier}`}
-            {view === 'signup-profile' && 'Start your journey with BNX'}
+            {view === 'signup-selection' && 'Choose your account type'}
+            {view === 'signup-profile' && 'Create a Personal BNX Account'}
+            {view === 'signup-child' && 'Create an account for your child'}
+            {view === 'signup-business' && 'Create a BNX Business Account'}
             {view === 'signup-mail' && 'Choose your @bnxmail.com address'}
             {view === 'forgot-password-options' && 'Account Recovery'}
             {view === 'forgot-password-otp' && 'Verify your identity'}
@@ -294,8 +339,14 @@ function App() {
                 Not your computer? Use Guest mode to sign in privately. <a href="#">Learn more</a>
               </p>
               <div className="auth-actions">
-                <button className="text-btn" onClick={() => setView('signup-profile')}>Create account</button>
-                <button className="primary-btn" onClick={proceedToPassword}>Next</button>
+                <button className="text-btn" onClick={handleCreateAccountClick}>Create account</button>
+                <button className="primary-btn" onClick={() => {
+                  if (!formData.identifier) {
+                    setError('Enter an email');
+                    return;
+                  }
+                  setView('login-password');
+                }}>Next</button>
               </div>
             </div>
           )}
@@ -330,56 +381,136 @@ function App() {
             </form>
           )}
 
-          {/* SIGNUP STEP 1: PROFILE */}
+          {/* SIGNUP STEP 0: SELECTION */}
+          {view === 'signup-selection' && (
+            <div className="auth-step">
+              <div className="selection-grid">
+                <div className="selection-card" onClick={() => setView('signup-profile')}>
+                  <div className="selection-icon">👤</div>
+                  <div className="selection-info">
+                    <strong>For myself</strong>
+                    <span>Use for your personal needs</span>
+                  </div>
+                </div>
+                <div className="selection-card" onClick={() => setView('signup-child')}>
+                  <div className="selection-icon">👶</div>
+                  <div className="selection-info">
+                    <strong>For my child</strong>
+                    <span>Manage an account for your child</span>
+                  </div>
+                </div>
+                <div className="selection-card" onClick={() => setView('signup-business')}>
+                  <div className="selection-icon">💼</div>
+                  <div className="selection-info">
+                    <strong>To manage my business</strong>
+                    <span>For your company or organization</span>
+                  </div>
+                </div>
+              </div>
+              <div className="auth-actions" style={{marginTop: '20px'}}>
+                <button className="text-btn" onClick={() => setView('login-email')}>Back</button>
+              </div>
+            </div>
+          )}
+
+          {/* SIGNUP STEP 1: PERSONAL PROFILE */}
           {view === 'signup-profile' && (
-            <form onSubmit={handleRegisterProfile} className="auth-step">
+            <form onSubmit={(e) => handleRegisterProfile(e, 'PERSONAL')} className="auth-step">
               <div className="name-grid">
                 <div className="input-group">
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " />
                   <label>First name</label>
                 </div>
                 <div className="input-group">
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " />
                   <label>Last name</label>
                 </div>
               </div>
               <div className="input-group">
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  required
-                />
+                <input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " />
                 <label>Username</label>
               </div>
               <div className="input-group">
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                />
+                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
                 <label>Password</label>
               </div>
               <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView('login-email')}>Sign in instead</button>
-                <button type="submit" className="primary-btn" disabled={loading}>
-                  {loading ? 'Creating...' : 'Next'}
-                </button>
+                <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
+                <button type="submit" className="primary-btn" disabled={loading}>{loading ? 'Creating...' : 'Next'}</button>
+              </div>
+            </form>
+          )}
+
+          {/* SIGNUP STEP 1: CHILD PROFILE */}
+          {view === 'signup-child' && (
+            <form onSubmit={(e) => handleRegisterProfile(e, 'PERSONAL')} className="auth-step">
+              <div className="name-grid">
+                <div className="input-group">
+                  <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " />
+                  <label>First name</label>
+                </div>
+                <div className="input-group">
+                  <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " />
+                  <label>Last name</label>
+                </div>
+              </div>
+              <div className="input-group">
+                <input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " />
+                <label>Date of Birth</label>
+              </div>
+              <div className="input-group">
+                <input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " />
+                <label>Username</label>
+              </div>
+              <div className="input-group">
+                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
+                <label>Password</label>
+              </div>
+              <div className="auth-actions">
+                <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
+                <button type="submit" className="primary-btn" disabled={loading}>{loading ? 'Creating...' : 'Next'}</button>
+              </div>
+            </form>
+          )}
+
+          {/* SIGNUP STEP 1: BUSINESS PROFILE */}
+          {view === 'signup-business' && (
+            <form onSubmit={(e) => handleRegisterProfile(e, 'BUSINESS')} className="auth-step">
+              <div className="input-group">
+                <input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " />
+                <label>Business name</label>
+              </div>
+              <div className="name-grid">
+                <div className="input-group">
+                  <input type="text" name="businessType" value={formData.businessType} onChange={handleInputChange} required placeholder=" " />
+                  <label>Business Type</label>
+                </div>
+                <div className="input-group">
+                  <input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required placeholder=" " />
+                  <label>Reg. Number (GST/VAT)</label>
+                </div>
+              </div>
+              <div className="name-grid">
+                <div className="input-group">
+                  <input type="text" name="ownerFirstName" value={formData.ownerFirstName} onChange={handleInputChange} required placeholder=" " />
+                  <label>Owner First name</label>
+                </div>
+                <div className="input-group">
+                  <input type="text" name="ownerLastName" value={formData.ownerLastName} onChange={handleInputChange} required placeholder=" " />
+                  <label>Owner Last name</label>
+                </div>
+              </div>
+              <div className="input-group">
+                <input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " />
+                <label>Username (Admin)</label>
+              </div>
+              <div className="input-group">
+                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
+                <label>Password</label>
+              </div>
+              <div className="auth-actions">
+                <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
+                <button type="submit" className="primary-btn" disabled={loading}>{loading ? 'Creating...' : 'Next'}</button>
               </div>
             </form>
           )}
