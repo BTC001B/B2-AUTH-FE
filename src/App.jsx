@@ -75,9 +75,24 @@ function App() {
       });
 
       if (loginRes.data.success) {
-        const accessToken = loginRes.data.data.accessToken;
+        const userData = loginRes.data.data;
+        const accessToken = userData.accessToken;
+        const userAccountType = userData.accountType;
         
-        // 2. If it's an OAuth flow, authorize the client
+        // 2. Validate account type for business/child modes
+        if (registrationMode === 'business' && userAccountType !== 'BUSINESS') {
+          setError('This application requires a Business account. Please log in with a Business account or create a new one.');
+          setLoading(false);
+          return;
+        }
+
+        if (registrationMode === 'child' && userAccountType !== 'CHILD') {
+          setError('This application is restricted to Child accounts.');
+          setLoading(false);
+          return;
+        }
+
+        // 3. If it's an OAuth flow, authorize the client
         if (clientId && redirectUri) {
           const authRes = await axios.post(
             `${API_BASE}/oauth/authorize`,
