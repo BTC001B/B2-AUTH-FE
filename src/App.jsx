@@ -134,6 +134,12 @@ function App() {
     setLoading(true);
     setError('');
 
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      setLoading(false);
+      return;
+    }
+
     let payload = {
       username: formData.username,
       password: formData.password,
