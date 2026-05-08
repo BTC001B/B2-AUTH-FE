@@ -507,12 +507,12 @@ function App() {
                   <label>Business Type</label>
                 </div>
                 <div className="input-group">
-                  <input type="text" name="domain" value={formData.domain} onChange={handleInputChange} required placeholder=" " />
+                  <input type="text" name="domain" value={formData.domain} onChange={handleInputChange} placeholder=" " />
                   <label>Business Domain (e.g. company.com)</label>
                 </div>
               </div>
               <div className="input-group">
-                <input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required placeholder=" " />
+                <input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} placeholder=" " />
                 <label>Reg. Number (GST/VAT)</label>
               </div>
               <div className="name-grid">
