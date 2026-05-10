@@ -154,7 +154,7 @@ function App() {
         registrationNumber: formData.registrationNumber,
         ownerFirstName: formData.ownerFirstName,
         ownerLastName: formData.ownerLastName,
-        domain: formData.domain || 'bnxmail.com'
+        domain: formData.domain
       };
     } else {
       payload = {
