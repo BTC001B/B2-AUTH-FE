@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
+
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 function App() {
-  const [view, setView] = useState('login-email'); // login-email, login-password, signup-profile, signup-mail, dashboard, verifying
+  const [view, setView] = useState('login-email'); // login-email, login-password, signup-selection, signup-profile, signup-child, signup-business, signup-mail, dashboard, verifying
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
+  
   // OAuth Context
   const [clientId, setClientId] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
@@ -16,32 +17,18 @@ function App() {
 
   // Form Data
   const [formData, setFormData] = useState({
-    identifier: '', // email or username for login
-    password: '',
-    username: '',   // for signup
-    firstName: '',
-    lastName: '',
-    emailName: '',  // for bnxmail address
-    otp: '',
-    newPassword: '',
-    confirmPassword: '',
-    // Business specific
-    businessName: '',
-    businessType: '',
-    registrationNumber: '',
-    ownerFirstName: '',
-    ownerLastName: '',
-    domain: '',
-    // Child specific
-    dob: '',
+    identifier: '', password: '', username: '', firstName: '', lastName: '',
+    emailName: '', otp: '', newPassword: '', confirmPassword: '',
+    businessName: '', businessType: '', registrationNumber: '',
+    ownerFirstName: '', ownerLastName: '', domain: '', dob: '',
   });
 
   const [tempToken, setTempToken] = useState('');
-  const [accessToken, setAccessToken] = useState(''); // Store for API calls
+  const [accessToken, setAccessToken] = useState('');
   const [userEmails, setUserEmails] = useState([]);
   const [recoveryOptions, setRecoveryOptions] = useState(null);
   const [selectedRecoveryMethod, setSelectedRecoveryMethod] = useState('');
-  const [verificationStatus, setVerificationStatus] = useState(null); // For callback view
+  const [verificationStatus, setVerificationStatus] = useState(null);
 
   const handleVerificationCallback = async (refId) => {
     setView('verifying');
@@ -56,17 +43,18 @@ function App() {
           const status = res.data.data.status;
           setVerificationStatus(status);
           
-          if (status === 'SUCCESS') {
+          const upperStatus = status ? status.toUpperCase() : "";
+          if (upperStatus === 'SUCCESS' || upperStatus === 'AUTHENTICATED' || upperStatus === 'VERIFIED') {
             setTimeout(() => {
               window.location.href = window.location.origin;
             }, 3000);
             setLoading(false);
-          } else if (status === 'PENDING' && attempts < maxAttempts) {
+          } else if (upperStatus === 'PENDING' && attempts < maxAttempts) {
             attempts++;
             setTimeout(poll, 3000);
           } else {
             setLoading(false);
-            if (status !== 'PENDING') {
+            if (upperStatus !== 'PENDING') {
               setError(`Verification failed: ${status}`);
             } else {
               setError('Verification timed out. Please refresh the page to check again.');
@@ -78,7 +66,6 @@ function App() {
         setLoading(false);
       }
     };
-
     poll();
   };
 
@@ -86,9 +73,12 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const refId = params.get('reference_id');
 
-    if (refId) {
-      handleVerificationCallback(refId);
-      return;
+    // MANUAL ROUTE DETECTION: Check if we are on /verification-complete
+    if (window.location.pathname === '/verification-complete' || refId) {
+      if (refId) {
+        handleVerificationCallback(refId);
+        return;
+      }
     }
 
     setClientId(params.get('client_id') || '');
@@ -102,7 +92,7 @@ function App() {
     setError('');
   };
 
-  // --- API CALLS ---
+  // API CALLS
   const fetchEmails = async (token) => {
     try {
       const res = await axios.get(`${API_BASE}/emails/list`, {
@@ -132,15 +122,6 @@ function App() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // --- LOGIN FLOW ---
-  const proceedToPassword = () => {
-    if (!formData.identifier) {
-      setError('Enter an email');
-      return;
-    }
-    setView('login-password');
   };
 
   const handleLogin = async (e) => {
@@ -199,17 +180,11 @@ function App() {
     }
   };
 
-  // --- SIGNUP FLOW ---
   const handleCreateAccountClick = () => {
-    if (registrationMode === 'business') {
-      setView('signup-business');
-    } else if (registrationMode === 'child') {
-      setView('signup-child');
-    } else if (registrationMode === 'public') {
-      setView('signup-profile');
-    } else {
-      setView('signup-selection');
-    }
+    if (registrationMode === 'business') setView('signup-business');
+    else if (registrationMode === 'child') setView('signup-child');
+    else if (registrationMode === 'public') setView('signup-profile');
+    else setView('signup-selection');
   };
 
   const handleRegisterProfile = async (e, type = 'PERSONAL') => {
@@ -230,27 +205,13 @@ function App() {
     };
 
     if (type === 'BUSINESS') {
-      payload = {
-        ...payload,
-        businessName: formData.businessName,
-        businessType: formData.businessType,
-        registrationNumber: formData.registrationNumber,
-        ownerFirstName: formData.ownerFirstName,
-        ownerLastName: formData.ownerLastName,
-        domain: formData.domain
-      };
+      payload = { ...payload, businessName: formData.businessName, businessType: formData.businessType, registrationNumber: formData.registrationNumber, ownerFirstName: formData.ownerFirstName, ownerLastName: formData.ownerLastName, domain: formData.domain };
     } else {
-      payload = {
-        ...payload,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        dob: formData.dob
-      };
+      payload = { ...payload, firstName: formData.firstName, lastName: formData.lastName, dob: formData.dob };
     }
 
     try {
       const regRes = await axios.post(`${API_BASE}/auth/register`, payload);
-
       if (regRes.data.success) {
         setTempToken(regRes.data.data.tempToken);
         setView('signup-mail');
@@ -266,18 +227,12 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
     try {
       const mailRes = await axios.post(
         `${API_BASE}/emails/create`,
-        {
-          emailName: formData.emailName,
-          password: formData.password,
-          isPrimary: true
-        },
+        { emailName: formData.emailName, password: formData.password, isPrimary: true },
         { headers: { Authorization: `Bearer ${tempToken}` } }
       );
-
       if (mailRes.data.success) {
         setFormData({ ...formData, identifier: mailRes.data.data.email });
         setView('login-password');
@@ -289,7 +244,6 @@ function App() {
     }
   };
 
-  // --- FORGOT PASSWORD FLOW ---
   const handleForgotPasswordClick = async () => {
     let identifier = formData.identifier;
     if (!identifier) {
@@ -302,15 +256,12 @@ function App() {
         } catch (e) { }
       }
     }
-
     if (!identifier) {
       setError('Please enter your email or username first.');
       setView('login-email');
       return;
     }
-
     setLoading(true);
-    setError('');
     try {
       const res = await axios.get(`${API_BASE}/auth/forgot-password/options?identifier=${identifier}`);
       if (res.data.success) {
@@ -327,15 +278,9 @@ function App() {
   const handleSendOtp = async (method) => {
     setSelectedRecoveryMethod(method);
     setLoading(true);
-    setError('');
     try {
-      const res = await axios.post(`${API_BASE}/auth/forgot-password/send-otp`, {
-        identifier: formData.identifier,
-        method: method
-      });
-      if (res.data.success) {
-        setView('forgot-password-otp');
-      }
+      const res = await axios.post(`${API_BASE}/auth/forgot-password/send-otp`, { identifier: formData.identifier, method });
+      if (res.data.success) setView('forgot-password-otp');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP');
     } finally {
@@ -349,19 +294,12 @@ function App() {
       setError('Please enter a valid 6-digit code');
       return;
     }
-
     setLoading(true);
-    setError('');
     try {
-      const res = await axios.post(`${API_BASE}/auth/forgot-password/verify-otp`, {
-        identifier: formData.identifier,
-        otp: formData.otp
-      });
-      if (res.data.success) {
-        setView('forgot-password-reset');
-      }
+      const res = await axios.post(`${API_BASE}/auth/forgot-password/verify-otp`, { identifier: formData.identifier, otp: formData.otp });
+      if (res.data.success) setView('forgot-password-reset');
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid or expired code');
+      setError(err.response?.data?.message || 'Invalid code');
     } finally {
       setLoading(false);
     }
@@ -373,22 +311,11 @@ function App() {
       setError('Passwords do not match');
       return;
     }
-    if (formData.newPassword.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-
     setLoading(true);
-    setError('');
     try {
-      const res = await axios.post(`${API_BASE}/auth/reset-password`, {
-        identifier: formData.identifier,
-        otp: formData.otp,
-        newPassword: formData.newPassword
-      });
+      const res = await axios.post(`${API_BASE}/auth/reset-password`, { identifier: formData.identifier, otp: formData.otp, newPassword: formData.newPassword });
       if (res.data.success) {
         setView('login-password');
-        setFormData({ ...formData, password: '', otp: '', newPassword: '', confirmPassword: '' });
         alert('Password reset successfully.');
       }
     } catch (err) {
@@ -404,23 +331,15 @@ function App() {
         <div className="auth-header">
           <div className="bnx-logo">BNX</div>
           <h1>
-            {view.startsWith('login') ? 'Sign in' :
-              view === 'dashboard' ? 'My BNX Account' :
-                view === 'verifying' ? 'Security Check' : 'Create account'}
+            {view === 'verifying' ? 'Security Check' :
+             view === 'dashboard' ? 'My BNX Account' : 
+             view.startsWith('login') ? 'Sign in' : 'Create account'}
           </h1>
           <p>
-            {view === 'login-email' && 'Use your BNX Account'}
-            {view === 'login-password' && `Welcome, ${formData.identifier}`}
-            {view === 'signup-selection' && 'Choose your account type'}
-            {view === 'signup-profile' && 'Create a Personal BNX Account'}
-            {view === 'signup-child' && 'Create an account for your child'}
-            {view === 'signup-business' && 'Create a BNX Business Account'}
-            {view === 'signup-mail' && 'Choose your @bnxmail.com address'}
-            {view === 'forgot-password-options' && 'Account Recovery'}
-            {view === 'forgot-password-otp' && 'Verify your identity'}
-            {view === 'forgot-password-reset' && 'Create a new password'}
-            {view === 'dashboard' && 'Manage your email addresses and security'}
-            {view === 'verifying' && 'Please wait while we check your status'}
+            {view === 'verifying' ? 'Verifying your status' :
+             view === 'dashboard' ? 'Manage your emails' : 
+             view === 'login-email' ? 'Use your BNX Account' : 
+             view === 'login-password' ? `Welcome, ${formData.identifier}` : 'Enter your details'}
           </p>
         </div>
 
@@ -436,7 +355,7 @@ function App() {
               <div className="forgot-link">Forgot email?</div>
               <div className="auth-actions">
                 <button className="text-btn" onClick={handleCreateAccountClick}>Create account</button>
-                <button className="primary-btn" onClick={() => { if (!formData.identifier) { setError('Enter an email'); return; } setView('login-password'); }}>Next</button>
+                <button className="primary-btn" onClick={() => setView('login-password')}>Next</button>
               </div>
             </div>
           )}
@@ -493,6 +412,40 @@ function App() {
             </form>
           )}
 
+          {view === 'signup-business' && (
+            <form onSubmit={(e) => handleRegisterProfile(e, 'BUSINESS')} className="auth-step">
+              <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business name</label></div>
+              <div className="input-group"><input type="text" name="businessType" value={formData.businessType} onChange={handleInputChange} required placeholder=" " /><label>Business Type</label></div>
+              <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} placeholder=" " /><label>Reg. Number</label></div>
+              <div className="name-grid">
+                <div className="input-group"><input type="text" name="ownerFirstName" value={formData.ownerFirstName} onChange={handleInputChange} required placeholder=" " /><label>Owner First name</label></div>
+                <div className="input-group"><input type="text" name="ownerLastName" value={formData.ownerLastName} onChange={handleInputChange} required placeholder=" " /><label>Owner Last name</label></div>
+              </div>
+              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username (Admin)</label></div>
+              <div className="input-group"><input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " /><label>Password</label></div>
+              <div className="auth-actions">
+                <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
+                <button type="submit" className="primary-btn" disabled={loading}>Next</button>
+              </div>
+            </form>
+          )}
+
+          {view === 'signup-child' && (
+            <form onSubmit={(e) => handleRegisterProfile(e, 'CHILD')} className="auth-step">
+              <div className="name-grid">
+                <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First name</label></div>
+                <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
+              </div>
+              <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
+              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username</label></div>
+              <div className="input-group"><input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " /><label>Password</label></div>
+              <div className="auth-actions">
+                <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
+                <button type="submit" className="primary-btn" disabled={loading}>Next</button>
+              </div>
+            </form>
+          )}
+
           {view === 'signup-mail' && (
             <form onSubmit={handleCreateMailbox} className="auth-step">
               <div className="input-group-mail">
@@ -505,9 +458,32 @@ function App() {
             </form>
           )}
 
+          {view === 'forgot-password-options' && (
+            <div className="auth-step">
+              {recoveryOptions?.recoveryEmail && <div className="recovery-option" onClick={() => handleSendOtp('EMAIL')}>📧 Email to {recoveryOptions.recoveryEmail}</div>}
+              {recoveryOptions?.phoneNumber && <div className="recovery-option" onClick={() => handleSendOtp('PHONE')}>📱 SMS to {recoveryOptions.phoneNumber}</div>}
+              <div className="auth-actions"><button className="text-btn" onClick={() => setView('login-password')}>Back</button></div>
+            </div>
+          )}
+
+          {view === 'forgot-password-otp' && (
+            <form onSubmit={handleVerifyOtp} className="auth-step">
+              <div className="input-group"><input type="text" name="otp" value={formData.otp} onChange={handleInputChange} required placeholder=" " /><label>Verification Code</label></div>
+              <div className="auth-actions"><button type="submit" className="primary-btn">Verify</button></div>
+            </form>
+          )}
+
+          {view === 'forgot-password-reset' && (
+            <form onSubmit={handleResetPassword} className="auth-step">
+              <div className="input-group"><input type="password" name="newPassword" value={formData.newPassword} onChange={handleInputChange} required placeholder=" " /><label>New Password</label></div>
+              <div className="input-group"><input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} required placeholder=" " /><label>Confirm Password</label></div>
+              <div className="auth-actions"><button type="submit" className="primary-btn">Reset</button></div>
+            </form>
+          )}
+
           {view === 'dashboard' && (
             <div className="auth-step dashboard-view">
-              <div className="dashboard-header"><h3>Manage Emails</h3><p>Promote secondary email to primary via Aadhaar.</p></div>
+              <div className="dashboard-header"><h3>Manage Emails</h3><p>Verify your Aadhaar to promote a secondary email.</p></div>
               <div className="email-list">
                 {userEmails.map(email => (
                   <div key={email.id} className="email-item">
@@ -519,9 +495,7 @@ function App() {
                   </div>
                 ))}
               </div>
-              <div className="auth-actions" style={{ marginTop: '20px' }}>
-                <button className="text-btn" onClick={() => window.location.reload()}>Sign Out</button>
-              </div>
+              <div className="auth-actions"><button className="text-btn" onClick={() => window.location.reload()}>Sign Out</button></div>
             </div>
           )}
 
@@ -530,8 +504,9 @@ function App() {
               <div className="spinner-large"></div>
               <h3>Verifying...</h3>
               <p>Checking status with Cashfree. Please wait.</p>
-              {verificationStatus === 'SUCCESS' && <div className="success-badge">Successful! Updating...</div>}
-              {verificationStatus && verificationStatus !== 'SUCCESS' && verificationStatus !== 'PENDING' && <div className="error-badge">Failed: {verificationStatus}</div>}
+              {verificationStatus && (verificationStatus.toUpperCase() === 'SUCCESS' || verificationStatus.toUpperCase() === 'VERIFIED') && (
+                <div className="success-badge">Successful! Updating your account...</div>
+              )}
             </div>
           )}
         </div>
