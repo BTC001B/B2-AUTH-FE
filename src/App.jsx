@@ -37,6 +37,7 @@ function App() {
     const maxAttempts = 10;
 
     const poll = async () => {
+      console.log("Polling for verification status...", refId);
       try {
         const res = await axios.get(`${API_BASE}/verification/status/${refId}`);
         if (res.data.success) {
@@ -62,6 +63,7 @@ function App() {
           }
         }
       } catch (err) {
+        console.error("Poll error:", err);
         setError('Verification check failed');
         setLoading(false);
       }
