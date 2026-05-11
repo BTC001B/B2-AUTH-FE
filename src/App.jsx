@@ -156,9 +156,9 @@ function App() {
         }
 
         // 3. Determine if this is the B2Auth flow or SSO/Redirect
-        const isB2AuthFlow = window.location.hostname === 'www.b2auth.com' && window.location.search === '';
+        const isB2AuthFlow = window.location.hostname.includes('b2auth.com') || window.location.hostname === 'localhost';
         
-        if (isB2AuthFlow) {
+        if (isB2AuthFlow && !clientId) {
           setAccessToken(token);
           fetchEmails(token);
           setView('dashboard');
