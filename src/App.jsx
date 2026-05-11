@@ -43,6 +43,45 @@ function App() {
   const [selectedRecoveryMethod, setSelectedRecoveryMethod] = useState('');
   const [verificationStatus, setVerificationStatus] = useState(null); // For callback view
 
+  const handleVerificationCallback = async (refId) => {
+    setView('verifying');
+    setLoading(true);
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const poll = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/verification/status/${refId}`);
+        if (res.data.success) {
+          const status = res.data.data.status;
+          setVerificationStatus(status);
+          
+          if (status === 'SUCCESS') {
+            setTimeout(() => {
+              window.location.href = window.location.origin;
+            }, 3000);
+            setLoading(false);
+          } else if (status === 'PENDING' && attempts < maxAttempts) {
+            attempts++;
+            setTimeout(poll, 3000);
+          } else {
+            setLoading(false);
+            if (status !== 'PENDING') {
+              setError(`Verification failed: ${status}`);
+            } else {
+              setError('Verification timed out. Please refresh to check again.');
+            }
+          }
+        }
+      } catch (err) {
+        setError('Verification check failed');
+        setLoading(false);
+      }
+    };
+
+    poll();
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const refId = params.get('reference_id');
@@ -58,26 +97,6 @@ function App() {
     setRegistrationMode(params.get('mode') || '');
   }, []);
 
-  const handleVerificationCallback = async (refId) => {
-    setView('verifying');
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API_BASE}/verification/status/${refId}`);
-      if (res.data.success) {
-        setVerificationStatus(res.data.data.status);
-        if (res.data.data.status === 'SUCCESS') {
-          // Success! Redirect to clean URL after a delay
-          setTimeout(() => {
-            window.location.href = window.location.origin;
-          }, 3000);
-        }
-      }
-    } catch (err) {
-      setError('Verification check failed');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -666,7 +685,7 @@ function App() {
 
               {(!recoveryOptions?.recoveryEmail && !recoveryOptions?.phoneNumber) && (
                 <p className="helper-text error-badge">
-                  No recovery methods are associated with this account. Please contact support.
+                   No recovery methods are associated with this account. Please contact support.
                 </p>
               )}
 
