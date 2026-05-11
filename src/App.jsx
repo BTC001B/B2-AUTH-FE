@@ -7,7 +7,7 @@ function App() {
   const [view, setView] = useState('login-email'); // login-email, login-password, signup-profile, signup-mail, dashboard, verifying
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // OAuth Context
   const [clientId, setClientId] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
@@ -43,49 +43,10 @@ function App() {
   const [selectedRecoveryMethod, setSelectedRecoveryMethod] = useState('');
   const [verificationStatus, setVerificationStatus] = useState(null); // For callback view
 
-  const handleVerificationCallback = async (refId) => {
-    setView('verifying');
-    setLoading(true);
-    let attempts = 0;
-    const maxAttempts = 10;
-
-    const poll = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/verification/status/${refId}`);
-        if (res.data.success) {
-          const status = res.data.data.status;
-          setVerificationStatus(status);
-          
-          if (status === 'SUCCESS') {
-            setTimeout(() => {
-              window.location.href = window.location.origin;
-            }, 3000);
-            setLoading(false);
-          } else if (status === 'PENDING' && attempts < maxAttempts) {
-            attempts++;
-            setTimeout(poll, 3000);
-          } else {
-            setLoading(false);
-            if (status !== 'PENDING') {
-              setError(`Verification failed: ${status}`);
-            } else {
-              setError('Verification timed out. Please refresh to check again.');
-            }
-          }
-        }
-      } catch (err) {
-        setError('Verification check failed');
-        setLoading(false);
-      }
-    };
-
-    poll();
-  };
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const refId = params.get('reference_id');
-    
+
     if (refId) {
       handleVerificationCallback(refId);
       return;
@@ -97,6 +58,26 @@ function App() {
     setRegistrationMode(params.get('mode') || '');
   }, []);
 
+  const handleVerificationCallback = async (refId) => {
+    setView('verifying');
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE}/verification/status/${refId}`);
+      if (res.data.success) {
+        setVerificationStatus(res.data.data.status);
+        if (res.data.data.status === 'SUCCESS') {
+          // Success! Redirect to clean URL after a delay
+          setTimeout(() => {
+            window.location.href = window.location.origin;
+          }, 3000);
+        }
+      }
+    } catch (err) {
+      setError('Verification check failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -160,7 +141,7 @@ function App() {
         const userData = loginRes.data.data;
         const token = userData.accessToken;
         const userAccountType = userData.accountType;
-        
+
         // 2. Validate account type for business/child modes
         if (registrationMode === 'business' && userAccountType !== 'BUSINESS') {
           setError('This application requires a Business account. Please log in with a Business account or create a new one.');
@@ -176,7 +157,7 @@ function App() {
 
         // 3. Determine if this is the B2Auth flow or SSO/Redirect
         const isB2AuthFlow = window.location.hostname.includes('b2auth.com') || window.location.hostname === 'localhost';
-        
+
         if (isB2AuthFlow && !clientId) {
           setAccessToken(token);
           fetchEmails(token);
@@ -305,7 +286,7 @@ function App() {
           const profile = JSON.parse(userProfile);
           identifier = profile.email || profile.username;
           setFormData({ ...formData, identifier });
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
@@ -410,9 +391,9 @@ function App() {
         <div className="auth-header">
           <div className="bnx-logo">BNX</div>
           <h1>
-            {view.startsWith('login') ? 'Sign in' : 
-             view === 'dashboard' ? 'My BNX Account' : 
-             view === 'verifying' ? 'Security Check' : 'Create account'}
+            {view.startsWith('login') ? 'Sign in' :
+              view === 'dashboard' ? 'My BNX Account' :
+                view === 'verifying' ? 'Security Check' : 'Create account'}
           </h1>
           <p>
             {view === 'login-email' && 'Use your BNX Account'}
@@ -484,7 +465,7 @@ function App() {
                 />
                 <label>Enter your password</label>
               </div>
-              <div className="forgot-link" onClick={handleForgotPasswordClick} style={{cursor: 'pointer'}}>Forgot password?</div>
+              <div className="forgot-link" onClick={handleForgotPasswordClick} style={{ cursor: 'pointer' }}>Forgot password?</div>
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('login-email')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>
@@ -520,7 +501,7 @@ function App() {
                   </div>
                 </div>
               </div>
-              <div className="auth-actions" style={{marginTop: '20px'}}>
+              <div className="auth-actions" style={{ marginTop: '20px' }}>
                 <button className="text-btn" onClick={() => setView('login-email')}>Back</button>
               </div>
             </div>
@@ -659,10 +640,10 @@ function App() {
           {/* FORGOT PASSWORD STEP 1: OPTIONS */}
           {view === 'forgot-password-options' && (
             <div className="auth-step">
-              <p className="helper-text" style={{marginBottom: '20px'}}>
+              <p className="helper-text" style={{ marginBottom: '20px' }}>
                 How do you want to receive the password reset code?
               </p>
-              
+
               {recoveryOptions?.recoveryEmail && (
                 <div className="recovery-option" onClick={() => handleSendOtp('EMAIL')}>
                   <div className="recovery-icon">📧</div>
@@ -672,7 +653,7 @@ function App() {
                   </div>
                 </div>
               )}
-              
+
               {recoveryOptions?.phoneNumber && (
                 <div className="recovery-option" onClick={() => handleSendOtp('PHONE')}>
                   <div className="recovery-icon">📱</div>
@@ -685,11 +666,11 @@ function App() {
 
               {(!recoveryOptions?.recoveryEmail && !recoveryOptions?.phoneNumber) && (
                 <p className="helper-text error-badge">
-                   No recovery methods are associated with this account. Please contact support.
+                  No recovery methods are associated with this account. Please contact support.
                 </p>
               )}
 
-              <div className="auth-actions" style={{marginTop: '20px'}}>
+              <div className="auth-actions" style={{ marginTop: '20px' }}>
                 <button className="text-btn" onClick={() => setView('login-password')}>Back to Sign In</button>
               </div>
             </div>
@@ -698,7 +679,7 @@ function App() {
           {/* FORGOT PASSWORD STEP 2: VERIFY OTP */}
           {view === 'forgot-password-otp' && (
             <form onSubmit={handleVerifyOtp} className="auth-step">
-              <p className="helper-text" style={{marginBottom: '20px'}}>
+              <p className="helper-text" style={{ marginBottom: '20px' }}>
                 Enter the 6-digit verification code sent to your {selectedRecoveryMethod === 'EMAIL' ? 'email' : 'phone'}.
               </p>
               <div className="input-group">
@@ -726,7 +707,7 @@ function App() {
           {/* FORGOT PASSWORD STEP 3: RESET PASSWORD */}
           {view === 'forgot-password-reset' && (
             <form onSubmit={handleResetPassword} className="auth-step">
-              <p className="helper-text" style={{marginBottom: '20px'}}>
+              <p className="helper-text" style={{ marginBottom: '20px' }}>
                 Choose a strong, secure password that you don't use for other accounts.
               </p>
               <div className="input-group">
@@ -768,7 +749,7 @@ function App() {
                 <h3>Manage Emails</h3>
                 <p>Verify your Aadhaar to promote a secondary email to primary.</p>
               </div>
-              
+
               <div className="email-list">
                 {userEmails.map(email => (
                   <div key={email.id} className="email-item">
@@ -780,8 +761,8 @@ function App() {
                       {email.isPrimary ? (
                         <span className="badge-primary">Primary</span>
                       ) : (
-                        <button 
-                          className="btn-outline-small" 
+                        <button
+                          className="btn-outline-small"
                           onClick={() => handleMakePrimary(email.id)}
                           disabled={loading}
                         >
@@ -793,7 +774,7 @@ function App() {
                 ))}
               </div>
 
-              <div className="auth-actions" style={{marginTop: '20px'}}>
+              <div className="auth-actions" style={{ marginTop: '20px' }}>
                 <button className="text-btn" onClick={() => window.location.reload()}>Sign Out</button>
               </div>
             </div>
