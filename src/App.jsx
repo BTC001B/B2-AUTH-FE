@@ -43,6 +43,45 @@ function App() {
   const [selectedRecoveryMethod, setSelectedRecoveryMethod] = useState('');
   const [verificationStatus, setVerificationStatus] = useState(null); // For callback view
 
+  const handleVerificationCallback = async (refId) => {
+    setView('verifying');
+    setLoading(true);
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    const poll = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/verification/status/${refId}`);
+        if (res.data.success) {
+          const status = res.data.data.status;
+          setVerificationStatus(status);
+          
+          if (status === 'SUCCESS') {
+            setTimeout(() => {
+              window.location.href = window.location.origin;
+            }, 3000);
+            setLoading(false);
+          } else if (status === 'PENDING' && attempts < maxAttempts) {
+            attempts++;
+            setTimeout(poll, 3000);
+          } else {
+            setLoading(false);
+            if (status !== 'PENDING') {
+              setError(`Verification failed: ${status}`);
+            } else {
+              setError('Verification timed out. Please refresh the page to check again.');
+            }
+          }
+        }
+      } catch (err) {
+        setError('Verification check failed');
+        setLoading(false);
+      }
+    };
+
+    poll();
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const refId = params.get('reference_id');
@@ -57,27 +96,6 @@ function App() {
     setState(params.get('state') || '');
     setRegistrationMode(params.get('mode') || '');
   }, []);
-
-  const handleVerificationCallback = async (refId) => {
-    setView('verifying');
-    setLoading(true);
-    try {
-      const res = await axios.get(`${API_BASE}/verification/status/${refId}`);
-      if (res.data.success) {
-        setVerificationStatus(res.data.data.status);
-        if (res.data.data.status === 'SUCCESS') {
-          // Success! Redirect to clean URL after a delay
-          setTimeout(() => {
-            window.location.href = window.location.origin;
-          }, 3000);
-        }
-      }
-    } catch (err) {
-      setError('Verification check failed');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -131,7 +149,6 @@ function App() {
     setError('');
 
     try {
-      // 1. Authenticate with backend
       const loginRes = await axios.post(`${API_BASE}/auth/login`, {
         email: formData.identifier,
         password: formData.password
@@ -142,9 +159,8 @@ function App() {
         const token = userData.accessToken;
         const userAccountType = userData.accountType;
 
-        // 2. Validate account type for business/child modes
         if (registrationMode === 'business' && userAccountType !== 'BUSINESS') {
-          setError('This application requires a Business account. Please log in with a Business account or create a new one.');
+          setError('This application requires a Business account.');
           setLoading(false);
           return;
         }
@@ -155,7 +171,6 @@ function App() {
           return;
         }
 
-        // 3. Determine if this is the B2Auth flow or SSO/Redirect
         const isB2AuthFlow = window.location.hostname.includes('b2auth.com') || window.location.hostname === 'localhost';
 
         if (isB2AuthFlow && !clientId) {
@@ -174,8 +189,7 @@ function App() {
             window.location.href = `${redirectUri}?code=${code}&state=${state}`;
           }
         } else {
-          // Normal login redirect (fallback)
-          window.location.href = 'https://mail.bnxmail.com'; // Default Mail Dashboard
+          window.location.href = 'https://mail.bnxmail.com';
         }
       }
     } catch (err) {
@@ -230,7 +244,7 @@ function App() {
         ...payload,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        dob: formData.dob // Will be used by backend to mark as CHILD if < 18
+        dob: formData.dob
       };
     }
 
@@ -265,7 +279,6 @@ function App() {
       );
 
       if (mailRes.data.success) {
-        // Success! Now log in with the new account
         setFormData({ ...formData, identifier: mailRes.data.data.email });
         setView('login-password');
       }
@@ -376,7 +389,7 @@ function App() {
       if (res.data.success) {
         setView('login-password');
         setFormData({ ...formData, password: '', otp: '', newPassword: '', confirmPassword: '' });
-        alert('Password reset successfully. Please log in with your new password.');
+        alert('Password reset successfully.');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reset password');
@@ -414,395 +427,118 @@ function App() {
         <div className="auth-body">
           {error && <div className="error-badge">{error}</div>}
 
-          {/* LOGIN STEP 1: EMAIL */}
           {view === 'login-email' && (
             <div className="auth-step">
               <div className="input-group">
-                <input
-                  type="text"
-                  name="identifier"
-                  value={formData.identifier}
-                  onChange={handleInputChange}
-                  required
-                  placeholder=" "
-                />
+                <input type="text" name="identifier" value={formData.identifier} onChange={handleInputChange} required placeholder=" " />
                 <label>Email</label>
               </div>
               <div className="forgot-link">Forgot email?</div>
-              <p className="helper-text">
-                Not your computer? Use Guest mode to sign in privately. <a href="#">Learn more</a>
-              </p>
               <div className="auth-actions">
                 <button className="text-btn" onClick={handleCreateAccountClick}>Create account</button>
-                <button className="primary-btn" onClick={() => {
-                  if (!formData.identifier) {
-                    setError('Enter an email');
-                    return;
-                  }
-                  setView('login-password');
-                }}>Next</button>
+                <button className="primary-btn" onClick={() => { if (!formData.identifier) { setError('Enter an email'); return; } setView('login-password'); }}>Next</button>
               </div>
             </div>
           )}
 
-          {/* LOGIN STEP 2: PASSWORD */}
           {view === 'login-password' && (
             <form onSubmit={handleLogin} className="auth-step">
               <div className="user-chip" onClick={() => setView('login-email')}>
                 <div className="avatar">{formData.identifier.charAt(0).toUpperCase()}</div>
                 <span>{formData.identifier}</span>
-                <i className="chevron-down"></i>
               </div>
               <div className="input-group">
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  autoFocus
-                  placeholder=" "
-                />
+                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required autoFocus placeholder=" " />
                 <label>Enter your password</label>
               </div>
               <div className="forgot-link" onClick={handleForgotPasswordClick} style={{ cursor: 'pointer' }}>Forgot password?</div>
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('login-email')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>
-                  {loading ? 'Signing in...' : 'Sign in'}
-                </button>
+                <button type="submit" className="primary-btn" disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</button>
               </div>
             </form>
           )}
 
-          {/* SIGNUP STEP 0: SELECTION */}
           {view === 'signup-selection' && (
             <div className="auth-step">
               <div className="selection-grid">
                 <div className="selection-card" onClick={() => setView('signup-profile')}>
                   <div className="selection-icon">👤</div>
-                  <div className="selection-info">
-                    <strong>For myself</strong>
-                    <span>Use for your personal needs</span>
-                  </div>
+                  <div className="selection-info"><strong>For myself</strong></div>
                 </div>
                 <div className="selection-card" onClick={() => setView('signup-child')}>
                   <div className="selection-icon">👶</div>
-                  <div className="selection-info">
-                    <strong>For my child</strong>
-                    <span>Manage an account for your child</span>
-                  </div>
+                  <div className="selection-info"><strong>For my child</strong></div>
                 </div>
                 <div className="selection-card" onClick={() => setView('signup-business')}>
                   <div className="selection-icon">💼</div>
-                  <div className="selection-info">
-                    <strong>To manage my business</strong>
-                    <span>For your company or organization</span>
-                  </div>
+                  <div className="selection-info"><strong>For business</strong></div>
                 </div>
-              </div>
-              <div className="auth-actions" style={{ marginTop: '20px' }}>
-                <button className="text-btn" onClick={() => setView('login-email')}>Back</button>
               </div>
             </div>
           )}
 
-          {/* SIGNUP STEP 1: PERSONAL PROFILE */}
           {view === 'signup-profile' && (
             <form onSubmit={(e) => handleRegisterProfile(e, 'PERSONAL')} className="auth-step">
               <div className="name-grid">
-                <div className="input-group">
-                  <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " />
-                  <label>First name</label>
-                </div>
-                <div className="input-group">
-                  <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " />
-                  <label>Last name</label>
-                </div>
+                <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First name</label></div>
+                <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
-              <div className="input-group">
-                <input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " />
-                <label>Username</label>
-              </div>
-              <div className="input-group">
-                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
-                <label>Password</label>
-              </div>
+              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username</label></div>
+              <div className="input-group"><input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " /><label>Password</label></div>
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>{loading ? 'Creating...' : 'Next'}</button>
+                <button type="submit" className="primary-btn" disabled={loading}>Next</button>
               </div>
             </form>
           )}
 
-          {/* SIGNUP STEP 1: CHILD PROFILE */}
-          {view === 'signup-child' && (
-            <form onSubmit={(e) => handleRegisterProfile(e, 'PERSONAL')} className="auth-step">
-              <div className="name-grid">
-                <div className="input-group">
-                  <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " />
-                  <label>First name</label>
-                </div>
-                <div className="input-group">
-                  <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " />
-                  <label>Last name</label>
-                </div>
-              </div>
-              <div className="input-group">
-                <input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " />
-                <label>Date of Birth</label>
-              </div>
-              <div className="input-group">
-                <input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " />
-                <label>Username</label>
-              </div>
-              <div className="input-group">
-                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
-                <label>Password</label>
-              </div>
-              <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>{loading ? 'Creating...' : 'Next'}</button>
-              </div>
-            </form>
-          )}
-
-          {/* SIGNUP STEP 1: BUSINESS PROFILE */}
-          {view === 'signup-business' && (
-            <form onSubmit={(e) => handleRegisterProfile(e, 'BUSINESS')} className="auth-step">
-              <div className="input-group">
-                <input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " />
-                <label>Business name</label>
-              </div>
-              <div className="name-grid">
-                <div className="input-group">
-                  <input type="text" name="businessType" value={formData.businessType} onChange={handleInputChange} required placeholder=" " />
-                  <label>Business Type</label>
-                </div>
-                <div className="input-group">
-                  <input type="text" name="domain" value={formData.domain} onChange={handleInputChange} placeholder=" " />
-                  <label>Business Domain (e.g. company.com)</label>
-                </div>
-              </div>
-              <div className="input-group">
-                <input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} placeholder=" " />
-                <label>Reg. Number (GST/VAT)</label>
-              </div>
-              <div className="name-grid">
-                <div className="input-group">
-                  <input type="text" name="ownerFirstName" value={formData.ownerFirstName} onChange={handleInputChange} required placeholder=" " />
-                  <label>Owner First name</label>
-                </div>
-                <div className="input-group">
-                  <input type="text" name="ownerLastName" value={formData.ownerLastName} onChange={handleInputChange} required placeholder=" " />
-                  <label>Owner Last name</label>
-                </div>
-              </div>
-              <div className="input-group">
-                <input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " />
-                <label>Username (Admin)</label>
-              </div>
-              <div className="input-group">
-                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
-                <label>Password</label>
-              </div>
-              <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>{loading ? 'Creating...' : 'Next'}</button>
-              </div>
-            </form>
-          )}
-
-          {/* SIGNUP STEP 2: MAILBOX */}
           {view === 'signup-mail' && (
             <form onSubmit={handleCreateMailbox} className="auth-step">
               <div className="input-group-mail">
-                <input
-                  type="text"
-                  name="emailName"
-                  value={formData.emailName}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Choose your handle"
-                />
+                <input type="text" name="emailName" value={formData.emailName} onChange={handleInputChange} required placeholder="Choose your handle" />
                 <span className="domain-suffix">@bnxmail.com</span>
               </div>
-              <p className="helper-text">This will be your official email address. You can change your primary email later.</p>
               <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView('signup-profile')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>
-                  {loading ? 'Setting up...' : 'Create Email'}
-                </button>
+                <button type="submit" className="primary-btn" disabled={loading}>Create Email</button>
               </div>
             </form>
           )}
 
-          {/* FORGOT PASSWORD STEP 1: OPTIONS */}
-          {view === 'forgot-password-options' && (
-            <div className="auth-step">
-              <p className="helper-text" style={{ marginBottom: '20px' }}>
-                How do you want to receive the password reset code?
-              </p>
-
-              {recoveryOptions?.recoveryEmail && (
-                <div className="recovery-option" onClick={() => handleSendOtp('EMAIL')}>
-                  <div className="recovery-icon">📧</div>
-                  <div className="recovery-text">
-                    <strong>Get an email</strong>
-                    <span>Send an email to {recoveryOptions.recoveryEmail}</span>
-                  </div>
-                </div>
-              )}
-
-              {recoveryOptions?.phoneNumber && (
-                <div className="recovery-option" onClick={() => handleSendOtp('PHONE')}>
-                  <div className="recovery-icon">📱</div>
-                  <div className="recovery-text">
-                    <strong>Get a text message</strong>
-                    <span>Send an SMS to {recoveryOptions.phoneNumber}</span>
-                  </div>
-                </div>
-              )}
-
-              {(!recoveryOptions?.recoveryEmail && !recoveryOptions?.phoneNumber) && (
-                <p className="helper-text error-badge">
-                  No recovery methods are associated with this account. Please contact support.
-                </p>
-              )}
-
-              <div className="auth-actions" style={{ marginTop: '20px' }}>
-                <button className="text-btn" onClick={() => setView('login-password')}>Back to Sign In</button>
-              </div>
-            </div>
-          )}
-
-          {/* FORGOT PASSWORD STEP 2: VERIFY OTP */}
-          {view === 'forgot-password-otp' && (
-            <form onSubmit={handleVerifyOtp} className="auth-step">
-              <p className="helper-text" style={{ marginBottom: '20px' }}>
-                Enter the 6-digit verification code sent to your {selectedRecoveryMethod === 'EMAIL' ? 'email' : 'phone'}.
-              </p>
-              <div className="input-group">
-                <input
-                  type="text"
-                  name="otp"
-                  value={formData.otp}
-                  onChange={handleInputChange}
-                  required
-                  autoFocus
-                  maxLength="6"
-                  placeholder=" "
-                />
-                <label>Verification Code</label>
-              </div>
-              <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView('forgot-password-options')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>
-                  {loading ? 'Verifying...' : 'Verify Code'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* FORGOT PASSWORD STEP 3: RESET PASSWORD */}
-          {view === 'forgot-password-reset' && (
-            <form onSubmit={handleResetPassword} className="auth-step">
-              <p className="helper-text" style={{ marginBottom: '20px' }}>
-                Choose a strong, secure password that you don't use for other accounts.
-              </p>
-              <div className="input-group">
-                <input
-                  type="password"
-                  name="newPassword"
-                  value={formData.newPassword}
-                  onChange={handleInputChange}
-                  required
-                  autoFocus
-                  placeholder=" "
-                />
-                <label>New Password</label>
-              </div>
-              <div className="input-group">
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  required
-                  placeholder=" "
-                />
-                <label>Confirm Password</label>
-              </div>
-              <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView('forgot-password-otp')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>
-                  {loading ? 'Resetting...' : 'Reset Password'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {/* DASHBOARD VIEW (B2Auth Flow) */}
           {view === 'dashboard' && (
             <div className="auth-step dashboard-view">
-              <div className="dashboard-header">
-                <h3>Manage Emails</h3>
-                <p>Verify your Aadhaar to promote a secondary email to primary.</p>
-              </div>
-
+              <div className="dashboard-header"><h3>Manage Emails</h3><p>Promote secondary email to primary via Aadhaar.</p></div>
               <div className="email-list">
                 {userEmails.map(email => (
                   <div key={email.id} className="email-item">
-                    <div className="email-info">
-                      <div className="email-addr">{email.email}</div>
-                      <div className="email-meta">Created {new Date(email.createdAt).toLocaleDateString()}</div>
-                    </div>
+                    <div className="email-info"><div className="email-addr">{email.email}</div></div>
                     <div className="email-action">
-                      {email.isPrimary ? (
-                        <span className="badge-primary">Primary</span>
-                      ) : (
-                        <button
-                          className="btn-outline-small"
-                          onClick={() => handleMakePrimary(email.id)}
-                          disabled={loading}
-                        >
-                          Make Primary
-                        </button>
-                      )}
+                      {email.isPrimary ? <span className="badge-primary">Primary</span> : 
+                      <button className="btn-outline-small" onClick={() => handleMakePrimary(email.id)} disabled={loading}>Make Primary</button>}
                     </div>
                   </div>
                 ))}
               </div>
-
               <div className="auth-actions" style={{ marginTop: '20px' }}>
                 <button className="text-btn" onClick={() => window.location.reload()}>Sign Out</button>
               </div>
             </div>
           )}
 
-          {/* VERIFYING VIEW (Callback) */}
           {view === 'verifying' && (
             <div className="auth-step verifying-view">
               <div className="spinner-large"></div>
               <h3>Verifying...</h3>
-              <p>Checking your DigiLocker status with Cashfree.</p>
-              {verificationStatus === 'SUCCESS' && (
-                <div className="success-badge">Verification Successful! Updating your primary email...</div>
-              )}
-              {verificationStatus && verificationStatus !== 'SUCCESS' && verificationStatus !== 'PENDING' && (
-                <div className="error-badge">Verification failed: {verificationStatus}. Please try again.</div>
-              )}
+              <p>Checking status with Cashfree. Please wait.</p>
+              {verificationStatus === 'SUCCESS' && <div className="success-badge">Successful! Updating...</div>}
+              {verificationStatus && verificationStatus !== 'SUCCESS' && verificationStatus !== 'PENDING' && <div className="error-badge">Failed: {verificationStatus}</div>}
             </div>
           )}
         </div>
 
         <div className="auth-footer">
           <div className="footer-left">English (United States)</div>
-          <div className="footer-right">
-            <span>Help</span>
-            <span>Privacy</span>
-            <span>Terms</span>
-          </div>
+          <div className="footer-right"><span>Help</span><span>Privacy</span><span>Terms</span></div>
         </div>
       </div>
     </div>
