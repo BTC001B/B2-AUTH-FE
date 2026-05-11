@@ -4,7 +4,7 @@ import './App.css';
 const API_BASE = import.meta.env.VITE_API_BASE;
 
 function App() {
-  const [view, setView] = useState('login-email'); // login-email, login-password, signup-profile, signup-mail
+  const [view, setView] = useState('login-email'); // login-email, login-password, signup-profile, signup-mail, dashboard, verifying
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -37,20 +37,83 @@ function App() {
   });
 
   const [tempToken, setTempToken] = useState('');
+  const [accessToken, setAccessToken] = useState(''); // Store for API calls
+  const [userEmails, setUserEmails] = useState([]);
   const [recoveryOptions, setRecoveryOptions] = useState(null);
   const [selectedRecoveryMethod, setSelectedRecoveryMethod] = useState('');
+  const [verificationStatus, setVerificationStatus] = useState(null); // For callback view
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const refId = params.get('reference_id');
+    
+    if (refId) {
+      handleVerificationCallback(refId);
+      return;
+    }
+
     setClientId(params.get('client_id') || '');
     setRedirectUri(params.get('redirect_uri') || '');
     setState(params.get('state') || '');
     setRegistrationMode(params.get('mode') || '');
   }, []);
 
+  const handleVerificationCallback = async (refId) => {
+    setView('verifying');
+    setLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE}/verification/status/${refId}`);
+      if (res.data.success) {
+        setVerificationStatus(res.data.data.status);
+        if (res.data.data.status === 'SUCCESS') {
+          // Success! Redirect to clean URL after a delay
+          setTimeout(() => {
+            window.location.href = window.location.origin;
+          }, 3000);
+        }
+      }
+    } catch (err) {
+      setError('Verification check failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
+  };
+
+  // --- API CALLS ---
+  const fetchEmails = async (token) => {
+    try {
+      const res = await axios.get(`${API_BASE}/emails/list`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setUserEmails(res.data.data.emails);
+      }
+    } catch (err) {
+      console.error("Failed to fetch emails", err);
+    }
+  };
+
+  const handleMakePrimary = async (emailId) => {
+    setLoading(true);
+    try {
+      const res = await axios.post(
+        `${API_BASE}/verification/initiate/${emailId}`,
+        {},
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (res.data.success) {
+        window.location.href = res.data.data.redirectUrl;
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to initiate verification');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // --- LOGIN FLOW ---
@@ -76,7 +139,7 @@ function App() {
 
       if (loginRes.data.success) {
         const userData = loginRes.data.data;
-        const accessToken = userData.accessToken;
+        const token = userData.accessToken;
         const userAccountType = userData.accountType;
         
         // 2. Validate account type for business/child modes
@@ -92,12 +155,18 @@ function App() {
           return;
         }
 
-        // 3. If it's an OAuth flow, authorize the client
-        if (clientId && redirectUri) {
+        // 3. Determine if this is the B2Auth flow or SSO/Redirect
+        const isB2AuthFlow = window.location.hostname === 'www.b2auth.com' && window.location.search === '';
+        
+        if (isB2AuthFlow) {
+          setAccessToken(token);
+          fetchEmails(token);
+          setView('dashboard');
+        } else if (clientId && redirectUri) {
           const authRes = await axios.post(
             `${API_BASE}/oauth/authorize`,
             { clientId, redirectUri, state },
-            { headers: { Authorization: `Bearer ${accessToken}` } }
+            { headers: { Authorization: `Bearer ${token}` } }
           );
 
           if (authRes.data.success) {
@@ -322,7 +391,9 @@ function App() {
         <div className="auth-header">
           <div className="bnx-logo">BNX</div>
           <h1>
-            {view.startsWith('login') ? 'Sign in' : 'Create account'}
+            {view.startsWith('login') ? 'Sign in' : 
+             view === 'dashboard' ? 'My BNX Account' : 
+             view === 'verifying' ? 'Security Check' : 'Create account'}
           </h1>
           <p>
             {view === 'login-email' && 'Use your BNX Account'}
@@ -335,6 +406,8 @@ function App() {
             {view === 'forgot-password-options' && 'Account Recovery'}
             {view === 'forgot-password-otp' && 'Verify your identity'}
             {view === 'forgot-password-reset' && 'Create a new password'}
+            {view === 'dashboard' && 'Manage your email addresses and security'}
+            {view === 'verifying' && 'Please wait while we check your status'}
           </p>
         </div>
 
@@ -667,6 +740,59 @@ function App() {
                 </button>
               </div>
             </form>
+          )}
+
+          {/* DASHBOARD VIEW (B2Auth Flow) */}
+          {view === 'dashboard' && (
+            <div className="auth-step dashboard-view">
+              <div className="dashboard-header">
+                <h3>Manage Emails</h3>
+                <p>Verify your Aadhaar to promote a secondary email to primary.</p>
+              </div>
+              
+              <div className="email-list">
+                {userEmails.map(email => (
+                  <div key={email.id} className="email-item">
+                    <div className="email-info">
+                      <div className="email-addr">{email.email}</div>
+                      <div className="email-meta">Created {new Date(email.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <div className="email-action">
+                      {email.isPrimary ? (
+                        <span className="badge-primary">Primary</span>
+                      ) : (
+                        <button 
+                          className="btn-outline-small" 
+                          onClick={() => handleMakePrimary(email.id)}
+                          disabled={loading}
+                        >
+                          Make Primary
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="auth-actions" style={{marginTop: '20px'}}>
+                <button className="text-btn" onClick={() => window.location.reload()}>Sign Out</button>
+              </div>
+            </div>
+          )}
+
+          {/* VERIFYING VIEW (Callback) */}
+          {view === 'verifying' && (
+            <div className="auth-step verifying-view">
+              <div className="spinner-large"></div>
+              <h3>Verifying...</h3>
+              <p>Checking your DigiLocker status with Cashfree.</p>
+              {verificationStatus === 'SUCCESS' && (
+                <div className="success-badge">Verification Successful! Updating your primary email...</div>
+              )}
+              {verificationStatus && verificationStatus !== 'SUCCESS' && verificationStatus !== 'PENDING' && (
+                <div className="error-badge">Verification failed: {verificationStatus}. Please try again.</div>
+              )}
+            </div>
           )}
         </div>
 
