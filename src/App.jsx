@@ -446,6 +446,270 @@ function App() {
     }
   };
 
+  if (view === 'dashboard') {
+    return (
+      <div className="dashboard-container">
+        <aside className="dashboard-sidebar">
+          <div className="sidebar-logo">BNX</div>
+          
+          <nav className="sidebar-nav">
+            <button 
+              className={`sidebar-item ${dashboardTab === 'emails' ? 'active' : ''}`}
+              onClick={() => setDashboardTab('emails')}
+            >
+              <Mail size={20} />
+              <span className="label">Mailboxes</span>
+            </button>
+            <button 
+              className={`sidebar-item ${dashboardTab === 'sessions' ? 'active' : ''}`}
+              onClick={() => setDashboardTab('sessions')}
+            >
+              <ShieldCheck size={20} />
+              <span className="label">Security</span>
+            </button>
+            <button 
+              className={`sidebar-item ${dashboardTab === 'settings' ? 'active' : ''}`}
+              onClick={() => setDashboardTab('settings')}
+            >
+              <Settings size={20} />
+              <span className="label">Settings</span>
+            </button>
+            <button 
+              className={`sidebar-item ${dashboardTab === 'activity' ? 'active' : ''}`}
+              onClick={() => setDashboardTab('activity')}
+            >
+              <Activity size={20} />
+              <span className="label">Activity</span>
+            </button>
+          </nav>
+
+          <div className="sidebar-spacer"></div>
+          
+          <footer className="sidebar-footer">
+            <div className="user-profile-mini">
+              <div className="avatar">
+                <User size={20} />
+              </div>
+              <div className="user-info">
+                <div className="user-name">{formData.firstName || 'User'}</div>
+                <div className="user-email">{formData.identifier}</div>
+              </div>
+            </div>
+            <button className="sidebar-item logout" onClick={() => {
+              localStorage.clear();
+              window.location.reload();
+            }}>
+              <LogOut size={20} />
+              <span className="label">Sign Out</span>
+            </button>
+          </footer>
+        </aside>
+
+        <main className="dashboard-content">
+          <AnimatePresence mode="wait">
+            {dashboardTab === 'emails' && (
+              <motion.div 
+                key="emails"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="content-section"
+              >
+                <header className="section-header">
+                  <h2>Email Identities</h2>
+                  <p>Manage your linked mail accounts and primary address.</p>
+                </header>
+                <div className="card-list">
+                  {userEmails.map(email => (
+                    <div key={email.id} className={`glass-card email-card ${email.isPrimary ? 'primary' : ''}`}>
+                      <div className="card-info">
+                        <div className="card-main-text">
+                          {email.email}
+                          {email.isPrimary && <CheckCircle size={16} className="success-icon" />}
+                        </div>
+                        <div className="card-sub-text">{email.emailName} • {email.active ? 'Active' : 'Inactive'}</div>
+                      </div>
+                      <div className="card-actions">
+                        {email.isPrimary ? (
+                          <span className="status-pill primary">Primary</span>
+                        ) : (
+                          <button 
+                            className="action-btn secondary" 
+                            onClick={() => handleMakePrimary(email.id)}
+                            disabled={loading}
+                          >
+                            Make Primary
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <button className="add-card-btn">
+                    <Plus size={20} />
+                    <span>Add New Mailbox</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {dashboardTab === 'sessions' && (
+              <motion.div 
+                key="sessions"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="content-section"
+              >
+                <header className="section-header">
+                  <h2>Active Sessions</h2>
+                  <p>Devices currently logged into your BNX Account.</p>
+                </header>
+                <div className="card-list">
+                  {sessions.map(session => {
+                    const device = parseUserAgent(session.userAgent);
+                    return (
+                      <div key={session.id} className={`glass-card session-card ${session.isCurrentSession ? 'current' : ''}`}>
+                        <div className="device-icon">
+                          {device.type === 'phone' ? <Smartphone size={24} /> : 
+                           device.type === 'tablet' ? <Tablet size={24} /> : <Monitor size={24} />}
+                        </div>
+                        <div className="card-info">
+                          <div className="card-main-text">
+                            {device.name}
+                            {session.isCurrentSession && <span className="current-indicator">Current</span>}
+                          </div>
+                          <div className="card-sub-text">
+                            <div className="meta-item"><Globe size={12} /> {session.ipAddress}</div>
+                            <div className="meta-item"><Monitor size={12} /> {session.userAgent?.split(' ')[0] || 'Browser'}</div>
+                          </div>
+                          <div className="card-meta-text">
+                            <Clock size={12} /> Created: {new Date(session.createdAt).toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="card-actions">
+                          {!session.isCurrentSession && (
+                            <button 
+                              className="action-btn danger"
+                              onClick={() => handleRevokeSession(session.id)}
+                              disabled={loading}
+                            >
+                              <Trash2 size={16} />
+                              <span>Revoke</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {dashboardTab === 'settings' && (
+              <motion.div 
+                key="settings"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="content-section"
+              >
+                <header className="section-header">
+                  <h2>Account Settings</h2>
+                  <p>Manage your recovery information and security preferences.</p>
+                </header>
+                
+                <div className="settings-grid">
+                  <div className="glass-card settings-card">
+                    <div className="card-header">
+                      <ShieldCheck size={20} className="accent-icon" />
+                      <h3>Recovery Information</h3>
+                    </div>
+                    
+                    <div className="settings-form">
+                      <div className="settings-group">
+                        <label>Recovery Email</label>
+                        <div className="input-with-icon">
+                          <Mail size={18} />
+                          <input 
+                            type="email" 
+                            value={recoveryInfo.recoveryEmail || ''} 
+                            onChange={(e) => setRecoveryInfo({...recoveryInfo, recoveryEmail: e.target.value})}
+                            placeholder="Add recovery email"
+                            disabled={!isEditingRecovery}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="settings-group">
+                        <label>Phone Number</label>
+                        <div className="input-with-icon">
+                          <Phone size={18} />
+                          <input 
+                            type="text" 
+                            value={recoveryInfo.phoneNumber || ''} 
+                            onChange={(e) => setRecoveryInfo({...recoveryInfo, phoneNumber: e.target.value})}
+                            placeholder="Add phone number"
+                            disabled={!isEditingRecovery}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="settings-actions">
+                        {isEditingRecovery ? (
+                          <>
+                            <button className="action-btn secondary" onClick={() => setIsEditingRecovery(false)}>Cancel</button>
+                            <button className="action-btn primary-solid" onClick={handleUpdateRecovery} disabled={loading}>
+                              <Save size={16} /> Save Changes
+                            </button>
+                          </>
+                        ) : (
+                          <button className="action-btn secondary" onClick={() => setIsEditingRecovery(true)}>
+                            <Edit3 size={16} /> Edit Details
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass-card settings-card">
+                    <div className="card-header">
+                      <Settings size={20} className="accent-icon" />
+                      <h3>Preferences</h3>
+                    </div>
+                    <div className="settings-placeholder">
+                      <AlertCircle size={48} />
+                      <p>Additional settings coming soon in the next update.</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {dashboardTab === 'activity' && (
+              <motion.div 
+                key="activity"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="content-section"
+              >
+                <header className="section-header">
+                  <h2>Recent Activity</h2>
+                  <p>A log of important security events on your account.</p>
+                </header>
+                <div className="activity-placeholder">
+                  <Activity size={64} />
+                  <h3>Nothing to show yet</h3>
+                  <p>Your recent sign-ins and security changes will appear here.</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="google-auth-container">
       <div className="auth-card">
@@ -453,12 +717,10 @@ function App() {
           <div className="bnx-logo">BNX</div>
           <h1>
             {view === 'verifying' ? 'Security Check' :
-             view === 'dashboard' ? 'My BNX Account' : 
              view.startsWith('login') ? 'Sign in' : 'Create account'}
           </h1>
           <p>
             {view === 'verifying' ? 'Verifying your status' :
-             view === 'dashboard' ? 'Manage your emails' : 
              view === 'login-email' ? 'Use your BNX Account' : 
              view === 'login-password' ? `Welcome, ${formData.identifier}` : 'Enter your details'}
           </p>
@@ -600,268 +862,6 @@ function App() {
               <div className="input-group"><input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} required placeholder=" " /><label>Confirm Password</label></div>
               <div className="auth-actions"><button type="submit" className="primary-btn">Reset</button></div>
             </form>
-          )}
-
-          {view === 'dashboard' && (
-            <div className="dashboard-container">
-              <aside className="dashboard-sidebar">
-                <div className="sidebar-logo">BNX</div>
-                
-                <nav className="sidebar-nav">
-                  <button 
-                    className={`sidebar-item ${dashboardTab === 'emails' ? 'active' : ''}`}
-                    onClick={() => setDashboardTab('emails')}
-                  >
-                    <Mail size={20} />
-                    <span className="label">Mailboxes</span>
-                  </button>
-                  <button 
-                    className={`sidebar-item ${dashboardTab === 'sessions' ? 'active' : ''}`}
-                    onClick={() => setDashboardTab('sessions')}
-                  >
-                    <ShieldCheck size={20} />
-                    <span className="label">Security</span>
-                  </button>
-                  <button 
-                    className={`sidebar-item ${dashboardTab === 'settings' ? 'active' : ''}`}
-                    onClick={() => setDashboardTab('settings')}
-                  >
-                    <Settings size={20} />
-                    <span className="label">Settings</span>
-                  </button>
-                  <button 
-                    className={`sidebar-item ${dashboardTab === 'activity' ? 'active' : ''}`}
-                    onClick={() => setDashboardTab('activity')}
-                  >
-                    <Activity size={20} />
-                    <span className="label">Activity</span>
-                  </button>
-                </nav>
-
-                <div className="sidebar-spacer"></div>
-                
-                <footer className="sidebar-footer">
-                  <div className="user-profile-mini">
-                    <div className="avatar">
-                      <User size={20} />
-                    </div>
-                    <div className="user-info">
-                      <div className="user-name">{formData.firstName || 'User'}</div>
-                      <div className="user-email">{formData.identifier}</div>
-                    </div>
-                  </div>
-                  <button className="sidebar-item logout" onClick={() => {
-                    localStorage.clear();
-                    window.location.reload();
-                  }}>
-                    <LogOut size={20} />
-                    <span className="label">Sign Out</span>
-                  </button>
-                </footer>
-              </aside>
-
-              <main className="dashboard-content">
-                <AnimatePresence mode="wait">
-                  {dashboardTab === 'emails' && (
-                    <motion.div 
-                      key="emails"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="content-section"
-                    >
-                      <header className="section-header">
-                        <h2>Email Identities</h2>
-                        <p>Manage your linked mail accounts and primary address.</p>
-                      </header>
-                      <div className="card-list">
-                        {userEmails.map(email => (
-                          <div key={email.id} className={`glass-card email-card ${email.isPrimary ? 'primary' : ''}`}>
-                            <div className="card-info">
-                              <div className="card-main-text">
-                                {email.email}
-                                {email.isPrimary && <CheckCircle size={16} className="success-icon" />}
-                              </div>
-                              <div className="card-sub-text">{email.emailName} • {email.active ? 'Active' : 'Inactive'}</div>
-                            </div>
-                            <div className="card-actions">
-                              {email.isPrimary ? (
-                                <span className="status-pill primary">Primary</span>
-                              ) : (
-                                <button 
-                                  className="action-btn secondary" 
-                                  onClick={() => handleMakePrimary(email.id)}
-                                  disabled={loading}
-                                >
-                                  Make Primary
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        <button className="add-card-btn">
-                          <Plus size={20} />
-                          <span>Add New Mailbox</span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {dashboardTab === 'sessions' && (
-                    <motion.div 
-                      key="sessions"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="content-section"
-                    >
-                      <header className="section-header">
-                        <h2>Active Sessions</h2>
-                        <p>Devices currently logged into your BNX Account.</p>
-                      </header>
-                      <div className="card-list">
-                        {sessions.map(session => {
-                          const device = parseUserAgent(session.userAgent);
-                          return (
-                            <div key={session.id} className={`glass-card session-card ${session.isCurrentSession ? 'current' : ''}`}>
-                              <div className="device-icon">
-                                {device.type === 'phone' ? <Smartphone size={24} /> : 
-                                 device.type === 'tablet' ? <Tablet size={24} /> : <Monitor size={24} />}
-                              </div>
-                              <div className="card-info">
-                                <div className="card-main-text">
-                                  {device.name}
-                                  {session.isCurrentSession && <span className="current-indicator">Current</span>}
-                                </div>
-                                <div className="card-sub-text">
-                                  <div className="meta-item"><Globe size={12} /> {session.ipAddress}</div>
-                                  <div className="meta-item"><Monitor size={12} /> {session.userAgent?.split(' ')[0] || 'Browser'}</div>
-                                </div>
-                                <div className="card-meta-text">
-                                  <Clock size={12} /> Created: {new Date(session.createdAt).toLocaleString()}
-                                </div>
-                              </div>
-                              <div className="card-actions">
-                                {!session.isCurrentSession && (
-                                  <button 
-                                    className="action-btn danger"
-                                    onClick={() => handleRevokeSession(session.id)}
-                                    disabled={loading}
-                                  >
-                                    <Trash2 size={16} />
-                                    <span>Revoke</span>
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {dashboardTab === 'settings' && (
-                    <motion.div 
-                      key="settings"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="content-section"
-                    >
-                      <header className="section-header">
-                        <h2>Account Settings</h2>
-                        <p>Manage your recovery information and security preferences.</p>
-                      </header>
-                      
-                      <div className="settings-grid">
-                        <div className="glass-card settings-card">
-                          <div className="card-header">
-                            <ShieldCheck size={20} className="accent-icon" />
-                            <h3>Recovery Information</h3>
-                          </div>
-                          
-                          <div className="settings-form">
-                            <div className="settings-group">
-                              <label>Recovery Email</label>
-                              <div className="input-with-icon">
-                                <Mail size={18} />
-                                <input 
-                                  type="email" 
-                                  value={recoveryInfo.recoveryEmail || ''} 
-                                  onChange={(e) => setRecoveryInfo({...recoveryInfo, recoveryEmail: e.target.value})}
-                                  placeholder="Add recovery email"
-                                  disabled={!isEditingRecovery}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="settings-group">
-                              <label>Phone Number</label>
-                              <div className="input-with-icon">
-                                <Phone size={18} />
-                                <input 
-                                  type="text" 
-                                  value={recoveryInfo.phoneNumber || ''} 
-                                  onChange={(e) => setRecoveryInfo({...recoveryInfo, phoneNumber: e.target.value})}
-                                  placeholder="Add phone number"
-                                  disabled={!isEditingRecovery}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="settings-actions">
-                              {isEditingRecovery ? (
-                                <>
-                                  <button className="action-btn secondary" onClick={() => setIsEditingRecovery(false)}>Cancel</button>
-                                  <button className="action-btn primary-solid" onClick={handleUpdateRecovery} disabled={loading}>
-                                    <Save size={16} /> Save Changes
-                                  </button>
-                                </>
-                              ) : (
-                                <button className="action-btn secondary" onClick={() => setIsEditingRecovery(true)}>
-                                  <Edit3 size={16} /> Edit Details
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="glass-card settings-card">
-                          <div className="card-header">
-                            <Settings size={20} className="accent-icon" />
-                            <h3>Preferences</h3>
-                          </div>
-                          <div className="settings-placeholder">
-                            <AlertCircle size={48} />
-                            <p>Additional settings coming soon in the next update.</p>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {dashboardTab === 'activity' && (
-                    <motion.div 
-                      key="activity"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="content-section"
-                    >
-                      <header className="section-header">
-                        <h2>Recent Activity</h2>
-                        <p>A log of important security events on your account.</p>
-                      </header>
-                      <div className="activity-placeholder">
-                        <Activity size={64} />
-                        <h3>Nothing to show yet</h3>
-                        <p>Your recent sign-ins and security changes will appear here.</p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </main>
-            </div>
           )}
 
           {view === 'verifying' && (
