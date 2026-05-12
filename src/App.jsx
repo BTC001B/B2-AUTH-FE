@@ -9,6 +9,7 @@ import {
   LockOpenIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import betaLogo from './assets/BETA3.png';
 import './App.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -465,7 +466,9 @@ function App() {
     return (
       <div className="dashboard-container">
         <aside className="dashboard-sidebar">
-          <div className="sidebar-logo">BNX</div>
+          <div className="sidebar-logo">
+            <img src={betaLogo} alt="B2Auth" className="sidebar-logo-img" />
+          </div>
           
           <nav className="sidebar-nav">
             <button 
@@ -730,7 +733,7 @@ function App() {
       <div className="auth-card">
         <div className="auth-header">
           <div className="beta-logo-container">
-            <div className="beta-logo">B</div>
+            <img src={betaLogo} alt="B2Auth" className="beta-logo-img" />
           </div>
           {view.startsWith('signup') ? (
             <h1 className="sign-in-to">Create Account</h1>
