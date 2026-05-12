@@ -85,6 +85,8 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const refId = params.get('reference_id');
+    const cid = params.get('client_id');
+    const ruri = params.get('redirect_uri');
 
     // MANUAL ROUTE DETECTION: Check if we are on /verification-complete
     if (window.location.pathname === '/verification-complete' || refId) {
@@ -94,16 +96,17 @@ function App() {
       }
     }
 
-    setClientId(params.get('client_id') || '');
-    setRedirectUri(params.get('redirect_uri') || '');
+    setClientId(cid || '');
+    setRedirectUri(ruri || '');
     setState(params.get('state') || '');
     setRegistrationMode(params.get('mode') || '');
 
-    // Session Restoration
+    // Session Restoration Logic
     const storedToken = localStorage.getItem('bnx_accessToken');
     const storedUser = localStorage.getItem('bnx_userData');
     
-    if (storedToken && storedUser && !refId) {
+    // Only restore dashboard if NOT an OAuth request (no cid) and NOT a verification flow
+    if (storedToken && storedUser && !refId && !cid) {
       try {
         const userData = JSON.parse(storedUser);
         setAccessToken(storedToken);
