@@ -29,6 +29,8 @@ function App() {
   const [recoveryOptions, setRecoveryOptions] = useState(null);
   const [selectedRecoveryMethod, setSelectedRecoveryMethod] = useState('');
   const [verificationStatus, setVerificationStatus] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions
 
   const handleVerificationCallback = async (refId) => {
     setView('verifying');
@@ -108,6 +110,35 @@ function App() {
     }
   };
 
+  const fetchSessions = async (token) => {
+    try {
+      const res = await axios.get(`${API_BASE}/auth/sessions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setSessions(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch sessions", err);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId) => {
+    setLoading(true);
+    try {
+      const res = await axios.delete(`${API_BASE}/auth/sessions/${sessionId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.data.success) {
+        fetchSessions(accessToken);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to revoke session');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMakePrimary = async (emailId) => {
     setLoading(true);
     try {
@@ -159,6 +190,7 @@ function App() {
         if (isB2AuthFlow && !clientId) {
           setAccessToken(token);
           fetchEmails(token);
+          fetchSessions(token);
           setView('dashboard');
         } else if (clientId && redirectUri) {
           const authRes = await axios.post(
@@ -484,30 +516,129 @@ function App() {
           )}
 
           {view === 'dashboard' && (
-            <div className="auth-step dashboard-view">
-              <div className="dashboard-header"><h3>Manage Emails</h3><p>Verify your Aadhaar to promote a secondary email.</p></div>
-              <div className="email-list">
-                {userEmails.map(email => (
-                  <div key={email.id} className="email-item">
-                    <div className="email-info"><div className="email-addr">{email.email}</div></div>
-                    <div className="email-action">
-                      {email.isPrimary ? <span className="badge-primary">Primary</span> : 
-                      <button className="btn-outline-small" onClick={() => handleMakePrimary(email.id)} disabled={loading}>Make Primary</button>}
+            <div className="dashboard-container">
+              <div className="dashboard-sidebar">
+                <div className="sidebar-logo">BNX</div>
+                
+                <div className="sidebar-nav">
+                  <button 
+                    className={`sidebar-item ${dashboardTab === 'emails' ? 'active' : ''}`}
+                    onClick={() => setDashboardTab('emails')}
+                  >
+                    <span className="icon">📧</span>
+                    <span className="label">Mailboxes</span>
+                  </button>
+                  <button 
+                    className={`sidebar-item ${dashboardTab === 'sessions' ? 'active' : ''}`}
+                    onClick={() => setDashboardTab('sessions')}
+                  >
+                    <span className="icon">🛡️</span>
+                    <span className="label">Security</span>
+                  </button>
+                </div>
+
+                <div className="sidebar-spacer"></div>
+                
+                <div className="sidebar-footer">
+                  <div className="user-profile-mini">
+                    <div className="avatar">{formData.identifier?.charAt(0).toUpperCase()}</div>
+                    <div className="user-info">
+                      <div className="user-name">Account Active</div>
+                      <div className="user-email">{formData.identifier}</div>
                     </div>
                   </div>
-                ))}
+                  <button className="sidebar-item logout" onClick={() => window.location.reload()}>
+                    <span className="icon">🚪</span>
+                    <span className="label">Sign Out</span>
+                  </button>
+                </div>
               </div>
-              <div className="auth-actions"><button className="text-btn" onClick={() => window.location.reload()}>Sign Out</button></div>
+
+              <div className="dashboard-content">
+                {dashboardTab === 'emails' && (
+                  <div className="content-section animate-fade-in">
+                    <div className="section-header">
+                      <h2>Email Identities</h2>
+                      <p>Manage your linked mail accounts and primary address.</p>
+                    </div>
+                    <div className="card-list">
+                      {userEmails.map(email => (
+                        <div key={email.id} className={`glass-card email-card ${email.isPrimary ? 'primary' : ''}`}>
+                          <div className="card-info">
+                            <div className="card-main-text">{email.email}</div>
+                            <div className="card-sub-text">{email.emailName} • {email.active ? 'Active' : 'Inactive'}</div>
+                          </div>
+                          <div className="card-actions">
+                            {email.isPrimary ? (
+                              <span className="status-pill primary">Primary</span>
+                            ) : (
+                              <button 
+                                className="action-btn secondary" 
+                                onClick={() => handleMakePrimary(email.id)}
+                                disabled={loading}
+                              >
+                                Make Primary
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {dashboardTab === 'sessions' && (
+                  <div className="content-section animate-fade-in">
+                    <div className="section-header">
+                      <h2>Active Sessions</h2>
+                      <p>Devices currently logged into your BNX Account.</p>
+                    </div>
+                    <div className="card-list">
+                      {sessions.map(session => (
+                        <div key={session.id} className={`glass-card session-card ${session.isCurrent ? 'current' : ''}`}>
+                          <div className="device-icon">
+                            {session.deviceName?.toLowerCase().includes('phone') ? '📱' : 
+                             session.deviceName?.toLowerCase().includes('tab') ? '平板' : '💻'}
+                          </div>
+                          <div className="card-info">
+                            <div className="card-main-text">
+                              {session.deviceName || 'Unknown Device'}
+                              {session.isCurrent && <span className="current-indicator">Current Session</span>}
+                            </div>
+                            <div className="card-sub-text">
+                              {session.ipAddress} • {session.browser || 'Browser'} on {session.os || 'OS'}
+                            </div>
+                            <div className="card-meta-text">
+                              Last active: {new Date(session.lastActivity).toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="card-actions">
+                            {!session.isCurrent && (
+                              <button 
+                                className="action-btn danger"
+                                onClick={() => handleRevokeSession(session.id)}
+                                disabled={loading}
+                              >
+                                Revoke
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {view === 'verifying' && (
             <div className="auth-step verifying-view">
-              <div className="spinner-large"></div>
-              <h3>Verifying...</h3>
-              <p>Checking status with Cashfree. Please wait.</p>
+              <div className="premium-spinner"></div>
+              <h3>Security Check</h3>
+              <p>We're verifying your identity with Cashfree. This only takes a moment.</p>
               {verificationStatus && (verificationStatus.toUpperCase() === 'SUCCESS' || verificationStatus.toUpperCase() === 'VERIFIED') && (
-                <div className="success-badge">Successful! Updating your account...</div>
+                <div className="success-badge">Verification Successful! Updating your account...</div>
               )}
             </div>
           )}
