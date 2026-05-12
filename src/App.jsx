@@ -4,7 +4,9 @@ import {
   LayoutDashboard, Mail, ShieldCheck, Settings, Activity, LogOut, 
   Smartphone, Monitor, Tablet, CheckCircle, AlertCircle, 
   Trash2, Edit3, Save, Plus, ChevronRight, User, Phone,
-  Globe, Clock, MapPin
+  Globe, Clock, MapPin, Briefcase,
+  LockIcon,
+  LockOpenIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
@@ -369,42 +371,52 @@ function App() {
   };
 
   const handleForgotPasswordClick = async () => {
-    let identifier = formData.identifier;
-    if (!identifier) {
-      const userProfile = localStorage.getItem('userProfile');
-      if (userProfile) {
-        try {
-          const profile = JSON.parse(userProfile);
-          identifier = profile.email || profile.username;
-          setFormData({ ...formData, identifier });
-        } catch (e) { }
+    if (formData.identifier) {
+      setLoading(true);
+      setError('');
+      try {
+        const res = await axios.get(`${API_BASE}/auth/forgot-password/options?identifier=${formData.identifier}`);
+        if (res.data.success) {
+          setRecoveryOptions(res.data.data);
+          setView('forgot-password-options');
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || 'User not found or no recovery options set');
+        setView('forgot-password-identifier');
+      } finally {
+        setLoading(false);
       }
+    } else {
+      setView('forgot-password-identifier');
     }
-    if (!identifier) {
-      setError('Please enter your email or username first.');
-      setView('login-email');
-      return;
-    }
+  };
+
+  const handleForgotPasswordIdentifierSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
+    setError('');
     try {
-      const res = await axios.get(`${API_BASE}/auth/forgot-password/options?identifier=${identifier}`);
+      const res = await axios.get(`${API_BASE}/auth/forgot-password/options?identifier=${formData.identifier}`);
       if (res.data.success) {
         setRecoveryOptions(res.data.data);
         setView('forgot-password-options');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to get recovery options');
+      setError(err.response?.data?.message || 'User not found');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSendOtp = async (method) => {
-    setSelectedRecoveryMethod(method);
     setLoading(true);
+    setError('');
     try {
-      const res = await axios.post(`${API_BASE}/auth/forgot-password/send-otp`, { identifier: formData.identifier, method });
-      if (res.data.success) setView('forgot-password-otp');
+      await axios.post(`${API_BASE}/auth/forgot-password/send-otp`, {
+        identifier: formData.identifier,
+        method: method
+      });
+      setView('forgot-password-otp');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP');
     } finally {
@@ -717,74 +729,114 @@ function App() {
     <div className="google-auth-container">
       <div className="auth-card">
         <div className="auth-header">
-          <div className="bnx-logo">BNX</div>
-          {clientId && (
-            <div className="oauth-client-info animate-fade-in">
-              <span className="client-label">Sign in to</span>
-              <span className="client-name">{clientId}</span>
-            </div>
+          <div className="beta-logo-container">
+            <div className="beta-logo">B</div>
+          </div>
+          {view.startsWith('signup') ? (
+            <h1 className="sign-in-to">Create Account</h1>
+          ) : view.startsWith('forgot-password') ? (
+            <h1 className="sign-in-to">Account Recovery</h1>
+          ) : clientId ? (
+            <h1 className="sign-in-to">Sign in to <span style={{ textTransform: 'capitalize' }}>{clientId.replace(/-/g, ' ')}</span></h1>
+          ) : (
+            <h1 className="sign-in-to">Sign in to BNX</h1>
           )}
-          <h1>
-            {view === 'verifying' ? 'Security Check' :
-             view.startsWith('login') ? 'Sign in' : 'Create account'}
-          </h1>
-          <p>
-            {view === 'verifying' ? 'Verifying your status' :
-             view === 'login-email' ? 'Use your BNX Account' : 
-             view === 'login-password' ? `Welcome, ${formData.identifier}` : 'Enter your details'}
+          <p className="use-account">
+            {view.startsWith('signup') ? 'Choose your account type' : 
+             view.startsWith('forgot-password') ? 'Verify your identity' : 'Use your BETA Account'}
           </p>
         </div>
 
         <div className="auth-body">
           {error && <div className="error-badge">{error}</div>}
 
-          {view === 'login-email' && (
-            <div className="auth-step">
-              <div className="input-group">
-                <input type="text" name="identifier" value={formData.identifier} onChange={handleInputChange} required placeholder=" " />
-                <label>Email</label>
+          {(view === 'login-email' || view === 'login-password') && (
+            <form onSubmit={handleLogin} className="auth-step-merged">
+              <div className="login-grid">
+                <div className="input-field-group">
+                  <label>Email:</label>
+                  <input 
+                    type="text" 
+                    name="identifier" 
+                    value={formData.identifier} 
+                    onChange={handleInputChange} 
+                    required 
+                  />
+                </div>
+                <div className="input-field-group">
+                  <label>Password:</label>
+                  <input 
+                    type="password" 
+                    name="password" 
+                    value={formData.password} 
+                    onChange={handleInputChange} 
+                    required 
+                  />
+                </div>
               </div>
-              <div className="forgot-link">Forgot email?</div>
-              <div className="auth-actions">
-                <button className="text-btn" onClick={handleCreateAccountClick}>Create account</button>
-                <button className="primary-btn" onClick={() => setView('login-password')}>Next</button>
+              
+              <div className="forgot-password-link" onClick={handleForgotPasswordClick}>
+                Forgot Password?
               </div>
-            </div>
-          )}
 
-          {view === 'login-password' && (
-            <form onSubmit={handleLogin} className="auth-step">
-              <div className="user-chip" onClick={() => setView('login-email')}>
-                <div className="avatar">{formData.identifier.charAt(0).toUpperCase()}</div>
-                <span>{formData.identifier}</span>
+              <div className="login-btn-container">
+                <button type="submit" className="merged-login-btn" disabled={loading}>
+                  {loading ? '...' : 'Login'}
+                </button>
               </div>
-              <div className="input-group">
-                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required autoFocus placeholder=" " />
-                <label>Enter your password</label>
-              </div>
-              <div className="forgot-link" onClick={handleForgotPasswordClick} style={{ cursor: 'pointer' }}>Forgot password?</div>
-              <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView('login-email')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>{loading ? 'Signing in...' : 'Sign in'}</button>
+
+              <div className="auth-footer-merged">
+                <div className="footer-right-links">
+                  <span>Help</span>
+                  <span>Privacy</span>
+                  <span>Terms</span>
+                </div>
+                <div><LockOpenIcon size={20} /></div>
+                <div className="footer-left-link" onClick={handleCreateAccountClick}>
+                  Create Account
+                </div>
               </div>
             </form>
           )}
 
           {view === 'signup-selection' && (
-            <div className="auth-step">
+            <div className="auth-step selection-view">
               <div className="selection-grid">
-                <div className="selection-card" onClick={() => setView('signup-profile')}>
-                  <div className="selection-icon">👤</div>
-                  <div className="selection-info"><strong>For myself</strong></div>
+                <div className="selection-card-premium" onClick={() => setView('signup-profile')}>
+                  <div className="selection-icon-circle">
+                    <User size={32} />
+                  </div>
+                  <div className="selection-content">
+                    <h3>For myself</h3>
+                    <p>Create a personal account to manage your secure emails.</p>
+                  </div>
+                  <ChevronRight className="arrow-icon" size={20} />
                 </div>
-                <div className="selection-card" onClick={() => setView('signup-child')}>
-                  <div className="selection-icon">👶</div>
-                  <div className="selection-info"><strong>For my child</strong></div>
+
+                <div className="selection-card-premium" onClick={() => setView('signup-child')}>
+                  <div className="selection-icon-circle accent">
+                    <User size={32} />
+                  </div>
+                  <div className="selection-content">
+                    <h3>For my child</h3>
+                    <p>Manage your child's digital identity with parental controls.</p>
+                  </div>
+                  <ChevronRight className="arrow-icon" size={20} />
                 </div>
-                <div className="selection-card" onClick={() => setView('signup-business')}>
-                  <div className="selection-icon">💼</div>
-                  <div className="selection-info"><strong>For business</strong></div>
+
+                <div className="selection-card-premium" onClick={() => setView('signup-business')}>
+                  <div className="selection-icon-circle business">
+                    <Briefcase size={32} />
+                  </div>
+                  <div className="selection-content">
+                    <h3>For business</h3>
+                    <p>Powerful tools to manage your team and business communications.</p>
+                  </div>
+                  <ChevronRight className="arrow-icon" size={20} />
                 </div>
+              </div>
+              <div className="selection-footer">
+                <button className="text-btn" onClick={() => setView('login-email')}>Already have an account? Sign in</button>
               </div>
             </div>
           )}
@@ -850,11 +902,44 @@ function App() {
             </form>
           )}
 
+          {view === 'forgot-password-identifier' && (
+            <form onSubmit={handleForgotPasswordIdentifierSubmit} className="auth-step">
+              <div className="input-group">
+                <input 
+                  type="text" 
+                  name="identifier" 
+                  value={formData.identifier} 
+                  onChange={handleInputChange} 
+                  required 
+                  placeholder=" " 
+                />
+                <label>Email or Username</label>
+              </div>
+              <div className="auth-actions">
+                <button type="button" className="text-btn" onClick={() => setView('login-email')}>Back</button>
+                <button type="submit" className="primary-btn" disabled={loading}>Next</button>
+              </div>
+            </form>
+          )}
+
           {view === 'forgot-password-options' && (
             <div className="auth-step">
-              {recoveryOptions?.recoveryEmail && <div className="recovery-option" onClick={() => handleSendOtp('EMAIL')}>📧 Email to {recoveryOptions.recoveryEmail}</div>}
-              {recoveryOptions?.phoneNumber && <div className="recovery-option" onClick={() => handleSendOtp('PHONE')}>📱 SMS to {recoveryOptions.phoneNumber}</div>}
-              <div className="auth-actions"><button className="text-btn" onClick={() => setView('login-password')}>Back</button></div>
+              <p className="recovery-helper">Choose where you want to receive the verification code:</p>
+              {recoveryOptions?.recoveryEmail && (
+                <div className="recovery-option-premium" onClick={() => handleSendOtp('EMAIL')}>
+                  <Mail size={20} />
+                  <span>Email to {recoveryOptions.recoveryEmail}</span>
+                </div>
+              )}
+              {recoveryOptions?.phoneNumber && (
+                <div className="recovery-option-premium" onClick={() => handleSendOtp('PHONE')}>
+                  <Smartphone size={20} />
+                  <span>SMS to {recoveryOptions.phoneNumber}</span>
+                </div>
+              )}
+              <div className="auth-actions">
+                <button className="text-btn" onClick={() => setView('forgot-password-identifier')}>Back</button>
+              </div>
             </div>
           )}
 
@@ -887,7 +972,7 @@ function App() {
 
         <div className="auth-footer">
           <div className="footer-left">English (United States)</div>
-          <div className="footer-right"><span>Help</span><span>Privacy</span><span>Terms</span></div>
+          {/* <div className="footer-right"><span>Help</span><span>Privacy</span><span>Terms</span></div> */}
         </div>
       </div>
     </div>
