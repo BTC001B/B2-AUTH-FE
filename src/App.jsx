@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import betaLogo from './assets/BETA3.png';
+import authLogo from './assets/auth2.png';
 import './App.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -787,18 +788,25 @@ function App() {
                   {loading ? '...' : 'Login'}
                 </button>
               </div>
-
+              {/* <div><img src={authLogo} alt="" className="auth-logo" height={40} /></div> */}
               <div className="auth-footer-merged">
                 <div className="footer-right-links">
-                  <span>Help</span>
-                  <span>Privacy</span>
-                  <span>Terms</span>
+                  <div style={{display:'flex',flexDirection:'row',gap:'9px'}}>
+                    <span>Help</span>
+                    <span>Privacy</span>
+                    <span>Terms</span>
+                  </div>
+                  <div>
+                    <span style={{fontSize:'12px', color:'blue', fontFamily:'inherit'}}>Report Issue</span>
+                  </div>
                 </div>
-                <div><LockOpenIcon size={20} /></div>
+                {/* <div><LockOpenIcon size={20} /></div> */}
+                <div><img src={authLogo} alt="" className="auth-logo" height={40} style={{marginRight:'20px'}} /></div>
                 <div className="footer-left-link" onClick={handleCreateAccountClick}>
                   Create Account
                 </div>
               </div>
+              {/* <span style={{fontSize:'12px', color:'blue', fontFamily:'inherit'}}>Report Issue</span> */}
             </form>
           )}
 
