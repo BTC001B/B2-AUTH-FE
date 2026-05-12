@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { 
+  LayoutDashboard, Mail, ShieldCheck, Settings, Activity, LogOut, 
+  Smartphone, Monitor, Tablet, CheckCircle, AlertCircle, 
+  Trash2, Edit3, Save, Plus, ChevronRight, User, Phone,
+  Globe, Clock, MapPin
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE;
@@ -30,7 +37,9 @@ function App() {
   const [selectedRecoveryMethod, setSelectedRecoveryMethod] = useState('');
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [sessions, setSessions] = useState([]);
-  const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions
+  const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions, settings, activity
+  const [recoveryInfo, setRecoveryInfo] = useState({ recoveryEmail: '', phoneNumber: '' });
+  const [isEditingRecovery, setIsEditingRecovery] = useState(false);
 
   const handleVerificationCallback = async (refId) => {
     setView('verifying');
@@ -89,6 +98,30 @@ function App() {
     setRedirectUri(params.get('redirect_uri') || '');
     setState(params.get('state') || '');
     setRegistrationMode(params.get('mode') || '');
+
+    // Session Restoration
+    const storedToken = localStorage.getItem('bnx_accessToken');
+    const storedUser = localStorage.getItem('bnx_userData');
+    
+    if (storedToken && storedUser && !refId) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setAccessToken(storedToken);
+        setFormData(prev => ({
+          ...prev,
+          identifier: userData.email || userData.username || '',
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || ''
+        }));
+        fetchEmails(storedToken);
+        fetchSessions(storedToken);
+        fetchRecoveryInfo(storedToken);
+        setView('dashboard');
+      } catch (err) {
+        console.error("Failed to restore session", err);
+        localStorage.clear();
+      }
+    }
   }, []);
 
   const handleInputChange = (e) => {
@@ -157,6 +190,51 @@ function App() {
     }
   };
 
+  const fetchRecoveryInfo = async (token) => {
+    try {
+      const res = await axios.get(`${API_BASE}/users/recovery`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setRecoveryInfo(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch recovery info", err);
+    }
+  };
+
+  const handleUpdateRecovery = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await axios.patch(`${API_BASE}/users/recovery`, recoveryInfo, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.data.success) {
+        setIsEditingRecovery(false);
+        fetchRecoveryInfo(accessToken);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update recovery info');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const parseUserAgent = (ua) => {
+    if (!ua) return { name: 'Unknown Device', type: 'monitor' };
+    const lowerUA = ua.toLowerCase();
+    
+    if (lowerUA.includes('iphone')) return { name: 'iPhone', type: 'phone' };
+    if (lowerUA.includes('android')) return { name: 'Android Phone', type: 'phone' };
+    if (lowerUA.includes('ipad')) return { name: 'iPad', type: 'tablet' };
+    if (lowerUA.includes('macintosh')) return { name: 'MacBook', type: 'monitor' };
+    if (lowerUA.includes('windows')) return { name: 'Windows PC', type: 'monitor' };
+    if (lowerUA.includes('linux')) return { name: 'Linux PC', type: 'monitor' };
+    
+    return { name: ua.split('/')[0] || 'Web Browser', type: 'monitor' };
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -188,9 +266,18 @@ function App() {
         const isB2AuthFlow = window.location.hostname.includes('b2auth.com') || window.location.hostname === 'localhost';
 
         if (isB2AuthFlow && !clientId) {
+          localStorage.setItem('bnx_accessToken', token);
+          localStorage.setItem('bnx_userData', JSON.stringify({
+            email: userData.email,
+            username: userData.username,
+            firstName: userData.firstName,
+            lastName: userData.lastName
+          }));
+          
           setAccessToken(token);
           fetchEmails(token);
           fetchSessions(token);
+          fetchRecoveryInfo(token);
           setView('dashboard');
         } else if (clientId && redirectUri) {
           const authRes = await axios.post(
@@ -517,118 +604,263 @@ function App() {
 
           {view === 'dashboard' && (
             <div className="dashboard-container">
-              <div className="dashboard-sidebar">
+              <aside className="dashboard-sidebar">
                 <div className="sidebar-logo">BNX</div>
                 
-                <div className="sidebar-nav">
+                <nav className="sidebar-nav">
                   <button 
                     className={`sidebar-item ${dashboardTab === 'emails' ? 'active' : ''}`}
                     onClick={() => setDashboardTab('emails')}
                   >
-                    <span className="icon">📧</span>
+                    <Mail size={20} />
                     <span className="label">Mailboxes</span>
                   </button>
                   <button 
                     className={`sidebar-item ${dashboardTab === 'sessions' ? 'active' : ''}`}
                     onClick={() => setDashboardTab('sessions')}
                   >
-                    <span className="icon">🛡️</span>
+                    <ShieldCheck size={20} />
                     <span className="label">Security</span>
                   </button>
-                </div>
+                  <button 
+                    className={`sidebar-item ${dashboardTab === 'settings' ? 'active' : ''}`}
+                    onClick={() => setDashboardTab('settings')}
+                  >
+                    <Settings size={20} />
+                    <span className="label">Settings</span>
+                  </button>
+                  <button 
+                    className={`sidebar-item ${dashboardTab === 'activity' ? 'active' : ''}`}
+                    onClick={() => setDashboardTab('activity')}
+                  >
+                    <Activity size={20} />
+                    <span className="label">Activity</span>
+                  </button>
+                </nav>
 
                 <div className="sidebar-spacer"></div>
                 
-                <div className="sidebar-footer">
+                <footer className="sidebar-footer">
                   <div className="user-profile-mini">
-                    <div className="avatar">{formData.identifier?.charAt(0).toUpperCase()}</div>
+                    <div className="avatar">
+                      <User size={20} />
+                    </div>
                     <div className="user-info">
-                      <div className="user-name">Account Active</div>
+                      <div className="user-name">{formData.firstName || 'User'}</div>
                       <div className="user-email">{formData.identifier}</div>
                     </div>
                   </div>
-                  <button className="sidebar-item logout" onClick={() => window.location.reload()}>
-                    <span className="icon">🚪</span>
+                  <button className="sidebar-item logout" onClick={() => {
+                    localStorage.clear();
+                    window.location.reload();
+                  }}>
+                    <LogOut size={20} />
                     <span className="label">Sign Out</span>
                   </button>
-                </div>
-              </div>
+                </footer>
+              </aside>
 
-              <div className="dashboard-content">
-                {dashboardTab === 'emails' && (
-                  <div className="content-section animate-fade-in">
-                    <div className="section-header">
-                      <h2>Email Identities</h2>
-                      <p>Manage your linked mail accounts and primary address.</p>
-                    </div>
-                    <div className="card-list">
-                      {userEmails.map(email => (
-                        <div key={email.id} className={`glass-card email-card ${email.isPrimary ? 'primary' : ''}`}>
-                          <div className="card-info">
-                            <div className="card-main-text">{email.email}</div>
-                            <div className="card-sub-text">{email.emailName} • {email.active ? 'Active' : 'Inactive'}</div>
+              <main className="dashboard-content">
+                <AnimatePresence mode="wait">
+                  {dashboardTab === 'emails' && (
+                    <motion.div 
+                      key="emails"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="content-section"
+                    >
+                      <header className="section-header">
+                        <h2>Email Identities</h2>
+                        <p>Manage your linked mail accounts and primary address.</p>
+                      </header>
+                      <div className="card-list">
+                        {userEmails.map(email => (
+                          <div key={email.id} className={`glass-card email-card ${email.isPrimary ? 'primary' : ''}`}>
+                            <div className="card-info">
+                              <div className="card-main-text">
+                                {email.email}
+                                {email.isPrimary && <CheckCircle size={16} className="success-icon" />}
+                              </div>
+                              <div className="card-sub-text">{email.emailName} • {email.active ? 'Active' : 'Inactive'}</div>
+                            </div>
+                            <div className="card-actions">
+                              {email.isPrimary ? (
+                                <span className="status-pill primary">Primary</span>
+                              ) : (
+                                <button 
+                                  className="action-btn secondary" 
+                                  onClick={() => handleMakePrimary(email.id)}
+                                  disabled={loading}
+                                >
+                                  Make Primary
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="card-actions">
-                            {email.isPrimary ? (
-                              <span className="status-pill primary">Primary</span>
-                            ) : (
-                              <button 
-                                className="action-btn secondary" 
-                                onClick={() => handleMakePrimary(email.id)}
-                                disabled={loading}
-                              >
-                                Make Primary
-                              </button>
-                            )}
+                        ))}
+                        <button className="add-card-btn">
+                          <Plus size={20} />
+                          <span>Add New Mailbox</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {dashboardTab === 'sessions' && (
+                    <motion.div 
+                      key="sessions"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="content-section"
+                    >
+                      <header className="section-header">
+                        <h2>Active Sessions</h2>
+                        <p>Devices currently logged into your BNX Account.</p>
+                      </header>
+                      <div className="card-list">
+                        {sessions.map(session => {
+                          const device = parseUserAgent(session.userAgent);
+                          return (
+                            <div key={session.id} className={`glass-card session-card ${session.isCurrentSession ? 'current' : ''}`}>
+                              <div className="device-icon">
+                                {device.type === 'phone' ? <Smartphone size={24} /> : 
+                                 device.type === 'tablet' ? <Tablet size={24} /> : <Monitor size={24} />}
+                              </div>
+                              <div className="card-info">
+                                <div className="card-main-text">
+                                  {device.name}
+                                  {session.isCurrentSession && <span className="current-indicator">Current</span>}
+                                </div>
+                                <div className="card-sub-text">
+                                  <div className="meta-item"><Globe size={12} /> {session.ipAddress}</div>
+                                  <div className="meta-item"><Monitor size={12} /> {session.userAgent?.split(' ')[0] || 'Browser'}</div>
+                                </div>
+                                <div className="card-meta-text">
+                                  <Clock size={12} /> Created: {new Date(session.createdAt).toLocaleString()}
+                                </div>
+                              </div>
+                              <div className="card-actions">
+                                {!session.isCurrentSession && (
+                                  <button 
+                                    className="action-btn danger"
+                                    onClick={() => handleRevokeSession(session.id)}
+                                    disabled={loading}
+                                  >
+                                    <Trash2 size={16} />
+                                    <span>Revoke</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {dashboardTab === 'settings' && (
+                    <motion.div 
+                      key="settings"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="content-section"
+                    >
+                      <header className="section-header">
+                        <h2>Account Settings</h2>
+                        <p>Manage your recovery information and security preferences.</p>
+                      </header>
+                      
+                      <div className="settings-grid">
+                        <div className="glass-card settings-card">
+                          <div className="card-header">
+                            <ShieldCheck size={20} className="accent-icon" />
+                            <h3>Recovery Information</h3>
+                          </div>
+                          
+                          <div className="settings-form">
+                            <div className="settings-group">
+                              <label>Recovery Email</label>
+                              <div className="input-with-icon">
+                                <Mail size={18} />
+                                <input 
+                                  type="email" 
+                                  value={recoveryInfo.recoveryEmail || ''} 
+                                  onChange={(e) => setRecoveryInfo({...recoveryInfo, recoveryEmail: e.target.value})}
+                                  placeholder="Add recovery email"
+                                  disabled={!isEditingRecovery}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="settings-group">
+                              <label>Phone Number</label>
+                              <div className="input-with-icon">
+                                <Phone size={18} />
+                                <input 
+                                  type="text" 
+                                  value={recoveryInfo.phoneNumber || ''} 
+                                  onChange={(e) => setRecoveryInfo({...recoveryInfo, phoneNumber: e.target.value})}
+                                  placeholder="Add phone number"
+                                  disabled={!isEditingRecovery}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="settings-actions">
+                              {isEditingRecovery ? (
+                                <>
+                                  <button className="action-btn secondary" onClick={() => setIsEditingRecovery(false)}>Cancel</button>
+                                  <button className="action-btn primary-solid" onClick={handleUpdateRecovery} disabled={loading}>
+                                    <Save size={16} /> Save Changes
+                                  </button>
+                                </>
+                              ) : (
+                                <button className="action-btn secondary" onClick={() => setIsEditingRecovery(true)}>
+                                  <Edit3 size={16} /> Edit Details
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
-                {dashboardTab === 'sessions' && (
-                  <div className="content-section animate-fade-in">
-                    <div className="section-header">
-                      <h2>Active Sessions</h2>
-                      <p>Devices currently logged into your BNX Account.</p>
-                    </div>
-                    <div className="card-list">
-                      {sessions.map(session => (
-                        <div key={session.id} className={`glass-card session-card ${session.isCurrent ? 'current' : ''}`}>
-                          <div className="device-icon">
-                            {session.deviceName?.toLowerCase().includes('phone') ? '📱' : 
-                             session.deviceName?.toLowerCase().includes('tab') ? '平板' : '💻'}
+                        <div className="glass-card settings-card">
+                          <div className="card-header">
+                            <Settings size={20} className="accent-icon" />
+                            <h3>Preferences</h3>
                           </div>
-                          <div className="card-info">
-                            <div className="card-main-text">
-                              {session.deviceName || 'Unknown Device'}
-                              {session.isCurrent && <span className="current-indicator">Current Session</span>}
-                            </div>
-                            <div className="card-sub-text">
-                              {session.ipAddress} • {session.browser || 'Browser'} on {session.os || 'OS'}
-                            </div>
-                            <div className="card-meta-text">
-                              Last active: {new Date(session.lastActivity).toLocaleString()}
-                            </div>
-                          </div>
-                          <div className="card-actions">
-                            {!session.isCurrent && (
-                              <button 
-                                className="action-btn danger"
-                                onClick={() => handleRevokeSession(session.id)}
-                                disabled={loading}
-                              >
-                                Revoke
-                              </button>
-                            )}
+                          <div className="settings-placeholder">
+                            <AlertCircle size={48} />
+                            <p>Additional settings coming soon in the next update.</p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {dashboardTab === 'activity' && (
+                    <motion.div 
+                      key="activity"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="content-section"
+                    >
+                      <header className="section-header">
+                        <h2>Recent Activity</h2>
+                        <p>A log of important security events on your account.</p>
+                      </header>
+                      <div className="activity-placeholder">
+                        <Activity size={64} />
+                        <h3>Nothing to show yet</h3>
+                        <p>Your recent sign-ins and security changes will appear here.</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </main>
             </div>
           )}
 
