@@ -242,14 +242,22 @@ function App() {
     return { name: ua.split('/')[0] || 'Web Browser', type: 'monitor' };
   };
 
+  const normalizeIdentifier = (id) => {
+    if (!id) return id;
+    if (id.includes('@')) return id;
+    return `${id}@bnxmail.com`;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
+    const normalizedEmail = normalizeIdentifier(formData.identifier);
+
     try {
       const loginRes = await axios.post(`${API_BASE}/auth/login`, {
-        email: formData.identifier,
+        email: normalizedEmail,
         password: formData.password
       });
 
@@ -376,8 +384,9 @@ function App() {
     if (formData.identifier) {
       setLoading(true);
       setError('');
+      const normalizedEmail = normalizeIdentifier(formData.identifier);
       try {
-        const res = await axios.get(`${API_BASE}/auth/forgot-password/options?identifier=${formData.identifier}`);
+        const res = await axios.get(`${API_BASE}/auth/forgot-password/options?identifier=${normalizedEmail}`);
         if (res.data.success) {
           setRecoveryOptions(res.data.data);
           setView('forgot-password-options');
@@ -397,8 +406,9 @@ function App() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    const normalizedEmail = normalizeIdentifier(formData.identifier);
     try {
-      const res = await axios.get(`${API_BASE}/auth/forgot-password/options?identifier=${formData.identifier}`);
+      const res = await axios.get(`${API_BASE}/auth/forgot-password/options?identifier=${normalizedEmail}`);
       if (res.data.success) {
         setRecoveryOptions(res.data.data);
         setView('forgot-password-options');
@@ -759,13 +769,17 @@ function App() {
               <div className="login-grid">
                 <div className="input-field-group">
                   <label>Email:</label>
-                  <input 
-                    type="text" 
-                    name="identifier" 
-                    value={formData.identifier} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
+                  <div className="login-input-wrapper">
+                    <input 
+                      type="text" 
+                      name="identifier" 
+                      value={formData.identifier} 
+                      onChange={handleInputChange} 
+                      required 
+                      placeholder="Username"
+                    />
+                    <span className="domain-hint">@bnxmail.com</span>
+                  </div>
                 </div>
                 <div className="input-field-group">
                   <label>Password:</label>
@@ -916,15 +930,18 @@ function App() {
           {view === 'forgot-password-identifier' && (
             <form onSubmit={handleForgotPasswordIdentifierSubmit} className="auth-step">
               <div className="input-group">
-                <input 
-                  type="text" 
-                  name="identifier" 
-                  value={formData.identifier} 
-                  onChange={handleInputChange} 
-                  required 
-                  placeholder=" " 
-                />
-                <label>Email or Username</label>
+                <div className="login-input-wrapper">
+                  <input 
+                    type="text" 
+                    name="identifier" 
+                    value={formData.identifier} 
+                    onChange={handleInputChange} 
+                    required 
+                    placeholder=" " 
+                  />
+                  <span className="domain-hint">@bnxmail.com</span>
+                  <label>Email or Username</label>
+                </div>
               </div>
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('login-email')}>Back</button>
