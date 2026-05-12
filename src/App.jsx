@@ -718,6 +718,12 @@ function App() {
       <div className="auth-card">
         <div className="auth-header">
           <div className="bnx-logo">BNX</div>
+          {clientId && (
+            <div className="oauth-client-info animate-fade-in">
+              <span className="client-label">Sign in to</span>
+              <span className="client-name">{clientId}</span>
+            </div>
+          )}
           <h1>
             {view === 'verifying' ? 'Security Check' :
              view.startsWith('login') ? 'Sign in' : 'Create account'}
