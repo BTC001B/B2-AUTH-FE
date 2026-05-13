@@ -41,6 +41,7 @@ function App() {
   const [selectedRecoveryMethod, setSelectedRecoveryMethod] = useState('');
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [externalSessions, setExternalSessions] = useState([]);
   const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions, settings, activity
   const [recoveryInfo, setRecoveryInfo] = useState({ recoveryEmail: '', phoneNumber: '' });
   const [isEditingRecovery, setIsEditingRecovery] = useState(false);
@@ -122,6 +123,7 @@ function App() {
         }));
         fetchEmails(storedToken);
         fetchSessions(storedToken);
+        fetchExternalSessions(storedToken);
         fetchRecoveryInfo(storedToken);
         setView('dashboard');
       } catch (err) {
@@ -160,6 +162,19 @@ function App() {
       }
     } catch (err) {
       console.error("Failed to fetch sessions", err);
+    }
+  };
+
+  const fetchExternalSessions = async (token) => {
+    try {
+      const res = await axios.get(`${API_BASE}/auth/sessions/external`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setExternalSessions(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch external sessions", err);
     }
   };
 
@@ -292,6 +307,7 @@ function App() {
           setAccessToken(token);
           fetchEmails(token);
           fetchSessions(token);
+          fetchExternalSessions(token);
           fetchRecoveryInfo(token);
           setView('dashboard');
         } else if (clientId && redirectUri) {
@@ -595,10 +611,16 @@ function App() {
                 className="content-section"
               >
                 <header className="section-header">
-                  <h2>Active Sessions</h2>
-                  <p>Devices currently logged into your BNX Account.</p>
+                  <h2>Security & Sessions</h2>
+                  <p>Manage your account security and connected applications.</p>
                 </header>
-                <div className="card-list">
+
+                <div className="subsection-title">
+                  <ShieldCheck size={18} />
+                  <h3>Active BNX Sessions</h3>
+                </div>
+
+                <div className="card-list" style={{ marginBottom: '48px' }}>
                   {sessions.map(session => {
                     const device = parseUserAgent(session.userAgent);
                     return (
@@ -636,6 +658,37 @@ function App() {
                     );
                   })}
                 </div>
+
+                {externalSessions.length > 0 && (
+                  <>
+                    <div className="subsection-title">
+                      <Briefcase size={18} />
+                      <h3>Connected Applications (SSO)</h3>
+                    </div>
+                    <div className="card-list">
+                      {externalSessions.map(session => (
+                        <div key={session.id} className="glass-card session-card external">
+                          <div className="device-icon app">
+                            <Globe size={24} />
+                          </div>
+                          <div className="card-info">
+                            <div className="card-main-text">
+                              {session.appName}
+                              <span className="app-id-pill">{session.clientId}</span>
+                            </div>
+                            <div className="card-sub-text">
+                              <div className="meta-item"><Globe size={12} /> {session.ipAddress}</div>
+                              <div className="meta-item"><Clock size={12} /> Logged in: {new Date(session.loggedInAt).toLocaleString()}</div>
+                            </div>
+                            <div className="card-meta-text">
+                              {session.userAgent?.substring(0, 80)}...
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </motion.div>
             )}
 
@@ -790,6 +843,7 @@ function App() {
                   <label>Password:</label>
                   <input 
                     type="password" 
+                    placeholder='Enter your password'
                     name="password" 
                     value={formData.password} 
                     onChange={handleInputChange} 
