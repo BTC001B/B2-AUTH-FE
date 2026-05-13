@@ -334,6 +334,7 @@ function App() {
   };
 
   const handleCreateAccountClick = () => {
+    setError('');
     if (registrationMode === 'business') setView('signup-business');
     else if (registrationMode === 'child') setView('signup-child');
     else if (registrationMode === 'public') setView('signup-profile');
@@ -398,6 +399,7 @@ function App() {
   };
 
   const handleForgotPasswordClick = async () => {
+    setError('');
     if (formData.identifier) {
       setLoading(true);
       setError('');
@@ -833,6 +835,7 @@ function App() {
           <ChevronDown size={14} className="select-arrow" />
         </div>
         <div className="auth-header">
+          {error && <div className="error-message-top">{error}</div>}
           <div className="beta-logo-container">
             <img src={betaLogo} alt="B2Auth" className="beta-logo-img" />
           </div>
@@ -852,8 +855,6 @@ function App() {
         </div>
 
         <div className="auth-body">
-          {error && <div className="error-badge">{error}</div>}
-
           {(view === 'login-email' || view === 'login-password') && (
             <form onSubmit={handleLogin} className="auth-step-merged">
               <div className="login-grid">
@@ -906,7 +907,7 @@ function App() {
                   </div>
                 </div>
                 {/* <div><LockOpenIcon size={20} /></div> */}
-                <div><img src={authLogo} alt="" className="auth-logo" height={40} style={{marginRight:'20px'}} /></div>
+                <div><img src={authLogo} alt="" className="auth-logo" height={40} style={{marginRight:'25px'}} /></div>
                 <div className="footer-left-link" onClick={handleCreateAccountClick}>
                   Create Account
                 </div>
