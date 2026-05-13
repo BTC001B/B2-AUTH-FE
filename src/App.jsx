@@ -446,8 +446,9 @@ function App() {
       return;
     }
     setLoading(true);
+    const normalizedEmail = normalizeIdentifier(formData.identifier);
     try {
-      const res = await axios.post(`${API_BASE}/auth/forgot-password/verify-otp`, { identifier: formData.identifier, otp: formData.otp });
+      const res = await axios.post(`${API_BASE}/auth/forgot-password/verify-otp`, { identifier: normalizedEmail, otp: formData.otp });
       if (res.data.success) setView('forgot-password-reset');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid code');
@@ -463,8 +464,9 @@ function App() {
       return;
     }
     setLoading(true);
+    const normalizedEmail = normalizeIdentifier(formData.identifier);
     try {
-      const res = await axios.post(`${API_BASE}/auth/reset-password`, { identifier: formData.identifier, otp: formData.otp, newPassword: formData.newPassword });
+      const res = await axios.post(`${API_BASE}/auth/reset-password`, { identifier: normalizedEmail, otp: formData.otp, newPassword: formData.newPassword });
       if (res.data.success) {
         setView('login-password');
         alert('Password reset successfully.');
