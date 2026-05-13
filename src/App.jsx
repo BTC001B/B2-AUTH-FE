@@ -980,7 +980,7 @@ function App() {
               <div className="login-grid">
                 <div className="input-field-group">
                   <label>Email:</label>
-                  <div className="login-input-wrapper">
+                  <div className={`login-input-wrapper ${!formData.identifier.includes('@') ? 'has-domain-hint' : ''}`}>
                     <input 
                       type="text" 
                       name="identifier" 
@@ -1142,7 +1142,7 @@ function App() {
           {view === 'forgot-password-identifier' && (
             <form onSubmit={handleForgotPasswordIdentifierSubmit} className="auth-step">
               <div className="input-group">
-                <div className="login-input-wrapper">
+                <div className={`login-input-wrapper ${!formData.identifier.includes('@') ? 'has-domain-hint' : ''}`}>
                   <input 
                     type="text" 
                     name="identifier" 
@@ -1151,7 +1151,7 @@ function App() {
                     required 
                     placeholder=" " 
                   />
-                  <span className="domain-hint">@bnxmail.com</span>
+                  {!formData.identifier.includes('@') && <span className="domain-hint">@bnxmail.com</span>}
                   <label>Email or Username</label>
                 </div>
               </div>

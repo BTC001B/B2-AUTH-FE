@@ -141,6 +141,10 @@ body {
 
 .login-input-wrapper input {
   width: 100%;
+  transition: padding-right 0.3s ease;
+}
+
+.login-input-wrapper.has-domain-hint input {
   padding-right: 120px !important; /* Space for the hint */
 }
 
@@ -153,6 +157,47 @@ body {
   pointer-events: none;
   opacity: 0.7;
   letter-spacing: 0.5px;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Create Mailbox View Styles */
+.input-group-mail {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.input-group-mail input {
+  width: 100%;
+  height: 52px;
+  padding: 0 130px 0 20px;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  background-color: var(--bg-input);
+  font-size: 15px;
+  color: var(--text-main);
+  transition: all 0.3s ease;
+}
+
+.input-group-mail input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+.domain-suffix {
+  position: absolute;
+  right: 16px;
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(5px); }
+  to { opacity: 0.7; transform: translateX(0); }
 }
 
 .input-field-group label {
