@@ -518,6 +518,13 @@ function App() {
               <span className="label">Security</span>
             </button>
             <button 
+              className={`sidebar-item ${dashboardTab === 'apps' ? 'active' : ''}`}
+              onClick={() => setDashboardTab('apps')}
+            >
+              <Globe size={20} />
+              <span className="label">Apps</span>
+            </button>
+            <button 
               className={`sidebar-item ${dashboardTab === 'settings' ? 'active' : ''}`}
               onClick={() => setDashboardTab('settings')}
             >
@@ -611,16 +618,10 @@ function App() {
                 className="content-section"
               >
                 <header className="section-header">
-                  <h2>Security & Sessions</h2>
-                  <p>Manage your account security and connected applications.</p>
+                  <h2>Active Sessions</h2>
+                  <p>Devices currently logged into your B2Auth Account.</p>
                 </header>
-
-                <div className="subsection-title">
-                  <ShieldCheck size={18} />
-                  <h3>Active BNX Sessions</h3>
-                </div>
-
-                <div className="card-list" style={{ marginBottom: '48px' }}>
+                <div className="card-list">
                   {sessions.map(session => {
                     const device = parseUserAgent(session.userAgent);
                     return (
@@ -658,36 +659,51 @@ function App() {
                     );
                   })}
                 </div>
+              </motion.div>
+            )}
 
-                {externalSessions.length > 0 && (
-                  <>
-                    <div className="subsection-title">
-                      <Briefcase size={18} />
-                      <h3>Connected Applications (SSO)</h3>
-                    </div>
-                    <div className="card-list">
-                      {externalSessions.map(session => (
-                        <div key={session.id} className="glass-card session-card external">
-                          <div className="device-icon app">
-                            <Globe size={24} />
+            {dashboardTab === 'apps' && (
+              <motion.div 
+                key="apps"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="content-section"
+              >
+                <header className="section-header">
+                  <h2>Connected Applications</h2>
+                  <p>Applications you have authorized via SSO.</p>
+                </header>
+
+                {externalSessions.length > 0 ? (
+                  <div className="card-list">
+                    {externalSessions.map(session => (
+                      <div key={session.id} className="glass-card session-card external">
+                        <div className="device-icon app">
+                          <Globe size={24} />
+                        </div>
+                        <div className="card-info">
+                          <div className="card-main-text">
+                            {session.appName}
+                            <span className="app-id-pill">{session.clientId}</span>
                           </div>
-                          <div className="card-info">
-                            <div className="card-main-text">
-                              {session.appName}
-                              <span className="app-id-pill">{session.clientId}</span>
-                            </div>
-                            <div className="card-sub-text">
-                              <div className="meta-item"><Globe size={12} /> {session.ipAddress}</div>
-                              <div className="meta-item"><Clock size={12} /> Logged in: {new Date(session.loggedInAt).toLocaleString()}</div>
-                            </div>
-                            <div className="card-meta-text">
-                              {session.userAgent?.substring(0, 80)}...
-                            </div>
+                          <div className="card-sub-text">
+                            <div className="meta-item"><Globe size={12} /> {session.ipAddress}</div>
+                            <div className="meta-item"><Clock size={12} /> Logged in: {new Date(session.loggedInAt).toLocaleString()}</div>
+                          </div>
+                          <div className="card-meta-text">
+                            {session.userAgent?.substring(0, 80)}...
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="activity-placeholder">
+                    <Globe size={64} />
+                    <h3>No Apps Authorized</h3>
+                    <p>When you log in to external apps via B2Auth, they will appear here.</p>
+                  </div>
                 )}
               </motion.div>
             )}
