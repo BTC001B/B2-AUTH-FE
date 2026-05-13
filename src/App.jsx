@@ -424,10 +424,12 @@ function App() {
     setLoading(true);
     setError('');
     try {
+      console.log(formData.identifier,method)
       await axios.post(`${API_BASE}/auth/forgot-password/send-otp`, {
         identifier: formData.identifier,
         method: method
       });
+
       setView('forgot-password-otp');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP');
