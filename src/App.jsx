@@ -9,7 +9,7 @@ import {
   LockOpenIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import betaLogo from './assets/BETA3.png';
+import betaLogo from './assets/beta2.png';
 import authLogo from './assets/auth2.png';
 import './App.css';
 
@@ -811,7 +811,7 @@ function App() {
           ) : clientId ? (
             <h1 className="sign-in-to">Sign in to <span style={{ textTransform: 'capitalize' }}>{clientId.replace(/-/g, ' ')}</span></h1>
           ) : (
-            <h1 className="sign-in-to">Sign in to BNX</h1>
+            <h1 className="sign-in-to">Sign in to B2Auth</h1>
           )}
           <p className="use-account">
             {view.startsWith('signup') ? 'Choose your account type' : 
