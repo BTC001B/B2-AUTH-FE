@@ -1074,3 +1074,266 @@ body {
   background: #f8fafc;
   border-color: var(--secondary);
 }
+
+/* Professional Sidebar Styles */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 48px;
+  padding-left: 8px;
+}
+
+.brand-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -1px;
+}
+
+.icon-box {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.sidebar-item.active .icon-box {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+}
+
+.user-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+
+.user-profile-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.user-profile-card .avatar {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+.user-details {
+  flex: 1;
+  overflow: hidden;
+}
+
+.user-details .user-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.user-details .user-email {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.switch-arrow {
+  color: var(--border);
+}
+
+.logout-minimal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: fit-content;
+  transition: color 0.2s;
+}
+
+.logout-minimal:hover {
+  color: var(--danger);
+}
+
+/* Account Switcher UI */
+.account-switcher-container {
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+.switcher-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.switcher-header h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.switcher-header p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.account-list-premium {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.account-item-card {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.account-item-card:hover {
+  background: #f8fafc;
+}
+
+.account-clickable {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  cursor: pointer;
+}
+
+.account-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+
+.account-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.account-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.account-email {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.signed-in-tag {
+  font-size: 10px;
+  color: var(--success);
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.remove-account-btn {
+  padding: 12px;
+  margin-right: 12px;
+  background: none;
+  border: none;
+  color: var(--border);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.remove-account-btn:hover {
+  color: var(--danger);
+  background: #fef2f2;
+}
+
+.add-account-action {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.add-account-action:hover {
+  background: #f8fafc;
+}
+
+.add-icon-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px dashed var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.back-to-dash-btn {
+  display: block;
+  width: fit-content;
+  margin: 24px auto 0;
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.back-to-dash-btn:hover {
+  text-decoration: underline;
+}

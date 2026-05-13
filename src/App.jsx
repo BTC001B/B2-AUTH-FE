@@ -569,8 +569,9 @@ function App() {
     return (
       <div className="dashboard-container">
         <aside className="dashboard-sidebar">
-          <div className="sidebar-logo">
+          <div className="sidebar-brand">
             <img src={betaLogo} alt="B2Auth" className="sidebar-logo-img" />
+            <span className="brand-text">B2Auth</span>
           </div>
           
           <nav className="sidebar-nav">
@@ -578,62 +579,53 @@ function App() {
               className={`sidebar-item ${dashboardTab === 'emails' ? 'active' : ''}`}
               onClick={() => setDashboardTab('emails')}
             >
-              <Mail size={20} />
-              <span className="label">Mailboxes</span>
+              <div className="icon-box"><Mail size={18} /></div>
+              <span className="label">Dashboard</span>
             </button>
             <button 
               className={`sidebar-item ${dashboardTab === 'sessions' ? 'active' : ''}`}
               onClick={() => setDashboardTab('sessions')}
             >
-              <ShieldCheck size={20} />
+              <div className="icon-box"><ShieldCheck size={18} /></div>
               <span className="label">Security</span>
             </button>
             <button 
               className={`sidebar-item ${dashboardTab === 'apps' ? 'active' : ''}`}
               onClick={() => setDashboardTab('apps')}
             >
-              <Globe size={20} />
+              <div className="icon-box"><Globe size={18} /></div>
               <span className="label">Apps</span>
             </button>
             <button 
               className={`sidebar-item ${dashboardTab === 'settings' ? 'active' : ''}`}
               onClick={() => setDashboardTab('settings')}
             >
-              <Settings size={20} />
+              <div className="icon-box"><Settings size={18} /></div>
               <span className="label">Settings</span>
-            </button>
-            <button 
-              className={`sidebar-item ${dashboardTab === 'activity' ? 'active' : ''}`}
-              onClick={() => setDashboardTab('activity')}
-            >
-              <Activity size={20} />
-              <span className="label">Activity</span>
             </button>
           </nav>
 
           <div className="sidebar-spacer"></div>
           
           <footer className="sidebar-footer">
-            <div className="user-profile-mini">
+            <div className="user-profile-card" onClick={() => setView('account-selection')}>
               <div className="avatar">
-                <User size={20} />
+                {formData.firstName?.[0] || 'U'}
               </div>
-              <div className="user-info">
-                <div className="user-name">{formData.firstName || 'User'}</div>
+              <div className="user-details">
+                <div className="user-name">{formData.firstName} {formData.lastName}</div>
                 <div className="user-email">{formData.identifier}</div>
               </div>
+              <ChevronRight size={16} className="switch-arrow" />
             </div>
-            <button className="sidebar-item" onClick={() => setView('account-selection')}>
-              <User size={20} />
-              <span className="label">Switch Account</span>
-            </button>
-            <button className="sidebar-item logout" onClick={() => {
+            
+            <button className="sidebar-item logout-minimal" onClick={() => {
               localStorage.removeItem('bnx_accessToken');
               localStorage.removeItem('bnx_userData');
               window.location.reload();
             }}>
-              <LogOut size={20} />
-              <span className="label">Sign Out</span>
+              <LogOut size={16} />
+              <span>Sign Out</span>
             </button>
           </footer>
         </aside>
@@ -929,46 +921,57 @@ function App() {
 
         <div className="auth-body">
           {view === 'account-selection' && (
-            <div className="account-selection-view">
-              <div className="selection-grid">
+            <div className="account-switcher-container">
+              <header className="switcher-header">
+                <h2>Choose an account</h2>
+                <p>to continue to {clientId ? clientId.replace(/-/g, ' ') : 'B2Auth'}</p>
+              </header>
+
+              <div className="account-list-premium">
                 {accounts.map((acc, index) => (
-                  <div 
-                    key={index} 
-                    className="selection-card-premium"
-                    onClick={() => handleSelectAccount(acc)}
-                  >
-                    <div className="selection-icon-circle">
-                      <User size={28} />
+                  <div key={index} className="account-item-card">
+                    <div className="account-clickable" onClick={() => handleSelectAccount(acc)}>
+                      <div className="account-avatar">
+                        {acc.userData.firstName?.[0]}
+                      </div>
+                      <div className="account-info">
+                        <div className="account-name">{acc.userData.firstName} {acc.userData.lastName}</div>
+                        <div className="account-email">{acc.userData.email}</div>
+                        {accessToken === acc.token && <span className="signed-in-tag">Signed in</span>}
+                      </div>
                     </div>
-                    <div className="selection-content">
-                      <h3>{acc.userData.firstName} {acc.userData.lastName}</h3>
-                      <p>{acc.userData.email}</p>
-                    </div>
-                    <ChevronRight className="arrow-icon" size={20} />
+                    <button className="remove-account-btn" title="Remove account" onClick={(e) => {
+                      e.stopPropagation();
+                      const updated = accounts.filter(a => a.userData.email !== acc.userData.email);
+                      setAccounts(updated);
+                      localStorage.setItem('bnx_accounts', JSON.stringify(updated));
+                    }}>
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 ))}
 
-                <div 
-                  className="selection-card-premium add-account"
+                <button 
+                  className="add-account-action"
                   onClick={() => {
                     localStorage.removeItem('bnx_accessToken');
                     localStorage.removeItem('bnx_userData');
                     setAccessToken(null);
-                    setFormData(prev => ({ ...prev, password: '' })); // Clear password but keep identifier for convenience maybe? No, clear it for fresh login.
+                    setFormData(prev => ({ ...prev, password: '' }));
                     setError('');
                     setView('login-email');
                   }}
                 >
-                  <div className="selection-icon-circle secondary">
-                    <Plus size={28} />
-                  </div>
-                  <div className="selection-content">
-                    <h3>Use another account</h3>
-                    <p>Log in with a different B2Auth account</p>
-                  </div>
-                  <ChevronRight className="arrow-icon" size={20} />
-                </div>
+                  <div className="add-icon-circle"><Plus size={18} /></div>
+                  <span>Use another account</span>
+                </button>
               </div>
+
+              {(!clientId) && (
+                <button className="back-to-dash-btn" onClick={() => setView('dashboard')}>
+                  Back to Dashboard
+                </button>
+              )}
             </div>
           )}
 
