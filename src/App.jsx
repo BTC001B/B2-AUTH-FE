@@ -623,8 +623,13 @@ function App() {
                 <div className="user-email">{formData.identifier}</div>
               </div>
             </div>
+            <button className="sidebar-item" onClick={() => setView('account-selection')}>
+              <User size={20} />
+              <span className="label">Switch Account</span>
+            </button>
             <button className="sidebar-item logout" onClick={() => {
-              localStorage.clear();
+              localStorage.removeItem('bnx_accessToken');
+              localStorage.removeItem('bnx_userData');
               window.location.reload();
             }}>
               <LogOut size={20} />
@@ -945,7 +950,14 @@ function App() {
 
                 <div 
                   className="selection-card-premium add-account"
-                  onClick={() => setView('login-email')}
+                  onClick={() => {
+                    localStorage.removeItem('bnx_accessToken');
+                    localStorage.removeItem('bnx_userData');
+                    setAccessToken(null);
+                    setFormData(prev => ({ ...prev, password: '' })); // Clear password but keep identifier for convenience maybe? No, clear it for fresh login.
+                    setError('');
+                    setView('login-email');
+                  }}
                 >
                   <div className="selection-icon-circle secondary">
                     <Plus size={28} />
