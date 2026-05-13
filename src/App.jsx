@@ -424,7 +424,8 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      console.log(formData.identifier,method)
+      const normalizedEmail = normalizeIdentifier(formData.identifier);
+      console.log(normalizedEmail,method)
       await axios.post(`${API_BASE}/auth/forgot-password/send-otp`, {
         identifier: formData.identifier,
         method: method
