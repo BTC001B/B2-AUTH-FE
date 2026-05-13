@@ -3,7 +3,7 @@ import axios from 'axios';
 import { 
   LayoutDashboard, Mail, ShieldCheck, Settings, Activity, LogOut, 
   Smartphone, Monitor, Tablet, CheckCircle, AlertCircle, 
-  Trash2, Edit3, Save, Plus, ChevronRight, User, Phone,
+  Trash2, Edit3, Save, Plus, ChevronRight, ChevronDown, User, Phone,
   Globe, Clock, MapPin, Briefcase,
   LockIcon,
   LockOpenIcon
@@ -43,6 +43,7 @@ function App() {
   const [sessions, setSessions] = useState([]);
   const [externalSessions, setExternalSessions] = useState([]);
   const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions, settings, activity
+  const [language, setLanguage] = useState('English (United States)');
   const [recoveryInfo, setRecoveryInfo] = useState({ recoveryEmail: '', phoneNumber: '' });
   const [isEditingRecovery, setIsEditingRecovery] = useState(false);
 
@@ -816,6 +817,21 @@ function App() {
   return (
     <div className="google-auth-container">
       <div className="auth-card">
+        <div className="language-selector-container">
+          <select 
+            value={language} 
+            onChange={(e) => setLanguage(e.target.value)}
+            className="language-select"
+          >
+            <option>English (US)</option>
+            <option>English (UK)</option>
+            <option>Español</option>
+            <option>Français</option>
+            <option>Deutsch</option>
+            <option>हिन्दी</option>
+          </select>
+          <ChevronDown size={14} className="select-arrow" />
+        </div>
         <div className="auth-header">
           <div className="beta-logo-container">
             <img src={betaLogo} alt="B2Auth" className="beta-logo-img" />
@@ -852,7 +868,7 @@ function App() {
                       required 
                       placeholder="Username"
                     />
-                    <span className="domain-hint">@bnxmail.com</span>
+                    {!formData.identifier.includes('@') && <span className="domain-hint">@bnxmail.com</span>}
                   </div>
                 </div>
                 <div className="input-field-group">

@@ -1020,3 +1020,34 @@ body {
   background: var(--primary-soft);
   color: var(--primary);
 }
+
+.language-selector-container {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transition: all 0.2s;
+  z-index: 10;
+}
+
+.language-select {
+  appearance: none;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  outline: none;
+  width: auto;
+  padding: 0;
+  margin: 0;
+  text-align: right;
+}
+
+.select-arrow {
+  color: var(--text-muted);
+  pointer-events: none;
+}
