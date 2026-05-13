@@ -6,7 +6,9 @@ import {
   Trash2, Edit3, Save, Plus, ChevronRight, ChevronDown, User, Phone,
   Globe, Clock, MapPin, Briefcase,
   LockIcon,
-  LockOpenIcon
+  LockOpenIcon,
+  Check,
+  Circle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import betaLogo from './assets/beta2.png';
@@ -325,6 +327,32 @@ function App() {
     return `${id}@bnxmail.com`;
   };
 
+  const validatePassword = (password) => {
+    if (!password) return { isValid: false, requirements: { minLength: false, hasUpper: false, hasNumber: false, hasSpecial: false } };
+    const minLength = password.length >= 8;
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    return {
+      isValid: minLength && hasUpper && hasNumber && hasSpecial,
+      requirements: { minLength, hasUpper, hasNumber, hasSpecial }
+    };
+  };
+
+  const PasswordRequirements = ({ password }) => {
+    const { requirements } = validatePassword(password);
+    
+    const missing = [];
+    if (!requirements.minLength) missing.push("8+ characters");
+    if (!requirements.hasUpper) missing.push("one uppercase");
+    if (!requirements.hasNumber) missing.push("one number");
+    if (!requirements.hasSpecial) missing.push("one special character");
+    
+    if (missing.length === 0) return <p className="password-hint success">Password is strong</p>;
+    
+    return <p className="password-hint error">Must include: {missing.join(", ")}</p>;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -414,8 +442,9 @@ function App() {
     setLoading(true);
     setError('');
 
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    const { isValid } = validatePassword(formData.password);
+    if (!isValid) {
+      setError('Password does not meet the security requirements');
       setLoading(false);
       return;
     }
@@ -546,8 +575,15 @@ function App() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    const { isValid } = validatePassword(formData.newPassword);
+    if (!isValid) {
+      setError('New password does not meet security requirements');
+      setLoading(false);
+      return;
+    }
     if (formData.newPassword !== formData.confirmPassword) {
       setError('Passwords do not match');
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -1085,7 +1121,11 @@ function App() {
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
               <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username</label></div>
-              <div className="input-group"><input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " /><label>Password</label></div>
+              <div className="input-group">
+                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
+                <label>Password</label>
+              </div>
+              <PasswordRequirements password={formData.password} />
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>Next</button>
@@ -1103,7 +1143,11 @@ function App() {
                 <div className="input-group"><input type="text" name="ownerLastName" value={formData.ownerLastName} onChange={handleInputChange} required placeholder=" " /><label>Owner Last name</label></div>
               </div>
               <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username (Admin)</label></div>
-              <div className="input-group"><input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " /><label>Password</label></div>
+              <div className="input-group">
+                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
+                <label>Password</label>
+              </div>
+              <PasswordRequirements password={formData.password} />
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>Next</button>
@@ -1119,7 +1163,11 @@ function App() {
               </div>
               <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
               <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username</label></div>
-              <div className="input-group"><input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " /><label>Password</label></div>
+              <div className="input-group">
+                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
+                <label>Password</label>
+              </div>
+              <PasswordRequirements password={formData.password} />
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>Next</button>
@@ -1192,7 +1240,11 @@ function App() {
 
           {view === 'forgot-password-reset' && (
             <form onSubmit={handleResetPassword} className="auth-step">
-              <div className="input-group"><input type="password" name="newPassword" value={formData.newPassword} onChange={handleInputChange} required placeholder=" " /><label>New Password</label></div>
+              <div className="input-group">
+                <input type="password" name="newPassword" value={formData.newPassword} onChange={handleInputChange} required placeholder=" " />
+                <label>New Password</label>
+              </div>
+              <PasswordRequirements password={formData.newPassword} />
               <div className="input-group"><input type="password" name="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} required placeholder=" " /><label>Confirm Password</label></div>
               <div className="auth-actions"><button type="submit" className="primary-btn">Reset</button></div>
             </form>
