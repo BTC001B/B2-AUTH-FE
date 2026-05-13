@@ -1061,3 +1061,16 @@ body {
   padding: 8px;
   width: 100%;
 }
+
+.selection-icon-circle.secondary {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+}
+
+.selection-card-premium.add-account {
+  border-style: dashed;
+}
+
+.selection-card-premium.add-account:hover {
+  background: #f8fafc;
+  border-color: var(--secondary);
+}

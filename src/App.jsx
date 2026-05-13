@@ -42,10 +42,22 @@ function App() {
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [externalSessions, setExternalSessions] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions, settings, activity
-  const [language, setLanguage] = useState('English (United States)');
+  const [language, setLanguage] = useState('English (US)');
   const [recoveryInfo, setRecoveryInfo] = useState({ recoveryEmail: '', phoneNumber: '' });
   const [isEditingRecovery, setIsEditingRecovery] = useState(false);
+
+  const saveAccount = (token, userData) => {
+    const storedAccounts = JSON.parse(localStorage.getItem('bnx_accounts') || '[]');
+    // Avoid duplicates by email/username
+    const filteredAccounts = storedAccounts.filter(acc => acc.userData.email !== userData.email);
+    const updatedAccounts = [{ token, userData }, ...filteredAccounts];
+    localStorage.setItem('bnx_accounts', JSON.stringify(updatedAccounts));
+    localStorage.setItem('bnx_accessToken', token);
+    localStorage.setItem('bnx_userData', JSON.stringify(userData));
+    setAccounts(updatedAccounts);
+  };
 
   const handleVerificationCallback = async (refId) => {
     setView('verifying');
@@ -110,8 +122,16 @@ function App() {
     // Session Restoration Logic
     const storedToken = localStorage.getItem('bnx_accessToken');
     const storedUser = localStorage.getItem('bnx_userData');
+    const storedAccounts = JSON.parse(localStorage.getItem('bnx_accounts') || '[]');
+    setAccounts(storedAccounts);
     
-    // Only restore dashboard if NOT an OAuth request (no cid) and NOT a verification flow
+    // 1. If it's an OAuth flow (cid present) and we have accounts, show selection
+    if (cid && storedAccounts.length > 0) {
+      setView('account-selection');
+      return;
+    }
+
+    // 2. Regular Session Restoration
     if (storedToken && storedUser && !refId && !cid) {
       try {
         const userData = JSON.parse(storedUser);
@@ -244,6 +264,47 @@ function App() {
     }
   };
 
+  const handleSelectAccount = async (account) => {
+    setLoading(true);
+    const { token, userData } = account;
+    
+    // Set as active session
+    localStorage.setItem('bnx_accessToken', token);
+    localStorage.setItem('bnx_userData', JSON.stringify(userData));
+    setAccessToken(token);
+    
+    if (clientId && redirectUri) {
+      try {
+        const authRes = await axios.post(
+          `${API_BASE}/oauth/authorize`,
+          { clientId, redirectUri, state },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (authRes.data.success) {
+          const code = authRes.data.data.code;
+          window.location.href = `${redirectUri}?code=${code}&state=${state}`;
+        }
+      } catch (err) {
+        setError('Session expired. Please log in again.');
+        // Remove expired from list
+        const updated = accounts.filter(acc => acc.userData.email !== userData.email);
+        setAccounts(updated);
+        localStorage.setItem('bnx_accounts', JSON.stringify(updated));
+        setView('login-email');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      fetchEmails(token);
+      fetchSessions(token);
+      fetchExternalSessions(token);
+      fetchRecoveryInfo(token);
+      setView('dashboard');
+      setLoading(false);
+    }
+  };
+
   const parseUserAgent = (ua) => {
     if (!ua) return { name: 'Unknown Device', type: 'monitor' };
     const lowerUA = ua.toLowerCase();
@@ -297,13 +358,12 @@ function App() {
         const isB2AuthFlow = window.location.hostname.includes('b2auth.com') || window.location.hostname === 'localhost';
 
         if (isB2AuthFlow && !clientId) {
-          localStorage.setItem('bnx_accessToken', token);
-          localStorage.setItem('bnx_userData', JSON.stringify({
+          saveAccount(token, {
             email: userData.email,
             username: userData.username,
             firstName: userData.firstName,
             lastName: userData.lastName
-          }));
+          });
           
           setAccessToken(token);
           fetchEmails(token);
@@ -312,6 +372,14 @@ function App() {
           fetchRecoveryInfo(token);
           setView('dashboard');
         } else if (clientId && redirectUri) {
+          // Still save the account for future use
+          saveAccount(token, {
+            email: userData.email,
+            username: userData.username,
+            firstName: userData.firstName,
+            lastName: userData.lastName
+          });
+
           const authRes = await axios.post(
             `${API_BASE}/oauth/authorize`,
             { clientId, redirectUri, state },
@@ -855,6 +923,43 @@ function App() {
         </div>
 
         <div className="auth-body">
+          {view === 'account-selection' && (
+            <div className="account-selection-view">
+              <div className="selection-grid">
+                {accounts.map((acc, index) => (
+                  <div 
+                    key={index} 
+                    className="selection-card-premium"
+                    onClick={() => handleSelectAccount(acc)}
+                  >
+                    <div className="selection-icon-circle">
+                      <User size={28} />
+                    </div>
+                    <div className="selection-content">
+                      <h3>{acc.userData.firstName} {acc.userData.lastName}</h3>
+                      <p>{acc.userData.email}</p>
+                    </div>
+                    <ChevronRight className="arrow-icon" size={20} />
+                  </div>
+                ))}
+
+                <div 
+                  className="selection-card-premium add-account"
+                  onClick={() => setView('login-email')}
+                >
+                  <div className="selection-icon-circle secondary">
+                    <Plus size={28} />
+                  </div>
+                  <div className="selection-content">
+                    <h3>Use another account</h3>
+                    <p>Log in with a different B2Auth account</p>
+                  </div>
+                  <ChevronRight className="arrow-icon" size={20} />
+                </div>
+              </div>
+            </div>
+          )}
+
           {(view === 'login-email' || view === 'login-password') && (
             <form onSubmit={handleLogin} className="auth-step-merged">
               <div className="login-grid">
