@@ -903,7 +903,7 @@ function App() {
                         <div className="banner-name">{formData.firstName} {formData.lastName}</div>
                         <div className="banner-email">{formData.identifier}</div>
                       </div>
-                      <button className="manage-link">Manage your Account</button>
+                      <button className="manage-link" onClick={handleProfileClick}>Manage your Account</button>
                     </div>
 
                     <div className="other-accounts-section">
