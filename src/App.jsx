@@ -15,6 +15,7 @@ import betaLogo from './assets/beta2.png';
 import authLogo from './assets/auth2.png';
 import * as OTPAuth from 'otpauth';
 import { QRCodeSVG } from 'qrcode.react';
+import { Html5QrcodeScanner } from "html5-qrcode";
 import './App.css';
 
 const AuthenticatorCode = ({ secret }) => {
@@ -93,6 +94,9 @@ function App() {
   const [profileData, setProfileData] = useState(null);
   const [settingsData, setSettingsData] = useState(null);
   const [authenticatorAccounts, setAuthenticatorAccounts] = useState([]);
+  const [showAddAuthModal, setShowAddAuthModal] = useState(false);
+  const [addAuthMode, setAddAuthMode] = useState('scan'); // 'scan' or 'manual'
+  const [manualAuthData, setManualAuthData] = useState({ name: '', secret: '' });
 
   const saveAccount = (token, userData) => {
     const storedAccounts = JSON.parse(localStorage.getItem('bnx_accounts') || '[]');
@@ -302,6 +306,69 @@ function App() {
       }
     } catch (err) {
       console.error("Failed to fetch authenticator accounts", err);
+    }
+  };
+
+  useEffect(() => {
+    let scanner = null;
+    if (showAddAuthModal && addAuthMode === 'scan') {
+      scanner = new Html5QrcodeScanner("reader", { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 } 
+      }, false);
+
+      const onScanSuccess = (decodedText) => {
+        scanner.clear();
+        handleProcessQR(decodedText);
+      };
+
+      const onScanError = (err) => {
+        // Ignore errors
+      };
+
+      scanner.render(onScanSuccess, onScanError);
+    }
+
+    return () => {
+      if (scanner) {
+        scanner.clear().catch(e => console.error("Scanner clear failed", e));
+      }
+    };
+  }, [showAddAuthModal, addAuthMode]);
+
+  const handleProcessQR = (text) => {
+    if (text.startsWith('otpauth://')) {
+      try {
+        const url = new URL(text);
+        const name = decodeURIComponent(url.pathname.split(':').pop() || 'New Account');
+        const secret = url.searchParams.get('secret');
+        if (secret) {
+          handleAddAuthenticatorAccount(name, secret);
+        }
+      } catch (e) {
+        setError("Invalid QR Code format");
+      }
+    } else {
+      // Assume raw secret
+      setManualAuthData({ ...manualAuthData, secret: text });
+      setAddAuthMode('manual');
+    }
+  };
+
+  const handleAddAuthenticatorAccount = async (name, secret) => {
+    try {
+      const res = await axios.post(`${API_BASE}/users/2fa/accounts`, {
+        name, secret
+      }, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.data.success) {
+        setShowAddAuthModal(false);
+        fetchAuthenticatorAccounts(accessToken);
+        setManualAuthData({ name: '', secret: '' });
+      }
+    } catch (err) {
+      setError("Failed to add account");
     }
   };
 
@@ -1207,6 +1274,10 @@ function App() {
                       <h2>B2Auth Cloud Authenticator</h2>
                       <p>Your synced 2FA codes are available on all your devices.</p>
                     </div>
+                    <button className="action-btn primary-solid" onClick={() => setShowAddAuthModal(true)}>
+                      <Plus size={16} />
+                      <span>Add Account</span>
+                    </button>
                   </div>
                 </header>
 
@@ -1232,6 +1303,72 @@ function App() {
                     </div>
                   )}
                 </div>
+
+                {/* Add Authenticator Account Modal */}
+                {showAddAuthModal && (
+                  <div className="auth-modal-overlay">
+                    <div className="auth-modal-content animate-scale-in">
+                      <div className="auth-modal-header">
+                        <h3>Add New Account</h3>
+                        <button className="auth-close-btn" onClick={() => setShowAddAuthModal(false)}>
+                          <X size={20} />
+                        </button>
+                      </div>
+
+                      <div className="auth-tab-switcher">
+                        <button 
+                          className={addAuthMode === 'scan' ? 'active' : ''} 
+                          onClick={() => setAddAuthMode('scan')}
+                        >
+                          Scan QR Code
+                        </button>
+                        <button 
+                          className={addAuthMode === 'manual' ? 'active' : ''} 
+                          onClick={() => setAddAuthMode('manual')}
+                        >
+                          Manual Entry
+                        </button>
+                      </div>
+
+                      <div className="auth-modal-body">
+                        {addAuthMode === 'scan' ? (
+                          <div className="qr-scanner-container">
+                            <div id="reader" style={{width: '100%'}}></div>
+                            <p className="scanner-hint">Point your camera at the QR code</p>
+                          </div>
+                        ) : (
+                          <div className="manual-entry-form">
+                            <div className="auth-input-group">
+                              <label>Account Name</label>
+                              <input 
+                                type="text" 
+                                placeholder="e.g. GitHub: vishal" 
+                                value={manualAuthData.name}
+                                onChange={e => setManualAuthData({...manualAuthData, name: e.target.value})}
+                              />
+                            </div>
+                            <div className="auth-input-group">
+                              <label>Secret Key</label>
+                              <input 
+                                type="text" 
+                                placeholder="Enter 2FA secret" 
+                                value={manualAuthData.secret}
+                                onChange={e => setManualAuthData({...manualAuthData, secret: e.target.value})}
+                              />
+                            </div>
+                            <button 
+                              className="action-btn primary-solid full-width"
+                              onClick={() => handleAddAuthenticatorAccount(manualAuthData.name, manualAuthData.secret)}
+                              disabled={!manualAuthData.name || !manualAuthData.secret}
+                            >
+                              Save Account
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
