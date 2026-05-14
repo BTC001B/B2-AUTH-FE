@@ -1193,6 +1193,48 @@ function App() {
               </motion.div>
             )}
 
+            {dashboardTab === 'authenticator' && (
+              <motion.div 
+                key="authenticator"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="content-section"
+              >
+                <header className="section-header">
+                  <div className="header-with-action">
+                    <div>
+                      <h2>B2Auth Cloud Authenticator</h2>
+                      <p>Your synced 2FA codes are available on all your devices.</p>
+                    </div>
+                  </div>
+                </header>
+
+                <div className="authenticator-grid">
+                  {authenticatorAccounts.length > 0 ? (
+                    authenticatorAccounts.map(acc => (
+                      <div key={acc.id} className="glass-card auth-code-card">
+                        <div className="auth-card-header">
+                          <div className="auth-icon-box"><Smartphone size={20} /></div>
+                          <div className="auth-account-info">
+                            <div className="auth-name">{acc.accountName}</div>
+                            <div className="auth-issuer">B2Auth Synced</div>
+                          </div>
+                        </div>
+                        <AuthenticatorCode secret={acc.secretKey} />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="activity-placeholder">
+                      <Smartphone size={64} />
+                      <h3>No Authenticator Accounts</h3>
+                      <p>Enable 2FA on your apps to see synced codes here.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
             {dashboardTab === 'settings' && (
               <motion.div 
                 key="settings"
