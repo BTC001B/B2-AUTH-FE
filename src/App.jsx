@@ -13,7 +13,47 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import betaLogo from './assets/beta2.png';
 import authLogo from './assets/auth2.png';
+import * as OTPAuth from 'otpauth';
+import { QRCodeSVG } from 'qrcode.react';
 import './App.css';
+
+const AuthenticatorCode = ({ secret }) => {
+  const [code, setCode] = useState('000000');
+  const [timeLeft, setTimeLeft] = useState(30);
+
+  useEffect(() => {
+    try {
+      const totp = new OTPAuth.TOTP({
+        issuer: "BNX",
+        label: "Account",
+        algorithm: "SHA1",
+        digits: 6,
+        period: 30,
+        secret: OTPAuth.Secret.fromBase32(secret),
+      });
+
+      const update = () => {
+        setCode(totp.generate());
+        setTimeLeft(30 - (Math.floor(Date.now() / 1000) % 30));
+      };
+
+      update();
+      const timer = setInterval(update, 1000);
+      return () => clearInterval(timer);
+    } catch (e) {
+      console.error("Invalid secret", e);
+    }
+  }, [secret]);
+
+  return (
+    <div className="auth-code-box">
+      <span className="auth-code">{code.slice(0,3)} {code.slice(3)}</span>
+      <div className="auth-timer-container">
+        <div className="auth-timer-bar" style={{ width: `${(timeLeft / 30) * 100}%`, backgroundColor: timeLeft < 5 ? '#ef4444' : '#4f46e5' }}></div>
+      </div>
+    </div>
+  );
+};
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
@@ -44,11 +84,15 @@ function App() {
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [externalSessions, setExternalSessions] = useState([]);
-  const [accounts, setAccounts] = useState([]);
+  const [accounts, setAccounts] = useState(() => JSON.parse(localStorage.getItem('bnx_accounts') || '[]'));
+  const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions, settings, activity
   const [language, setLanguage] = useState('English (US)');
   const [recoveryInfo, setRecoveryInfo] = useState({ recoveryEmail: '', phoneNumber: '' });
   const [isEditingRecovery, setIsEditingRecovery] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [settingsData, setSettingsData] = useState(null);
+  const [authenticatorAccounts, setAuthenticatorAccounts] = useState([]);
 
   const saveAccount = (token, userData) => {
     const storedAccounts = JSON.parse(localStorage.getItem('bnx_accounts') || '[]');
@@ -248,6 +292,19 @@ function App() {
     }
   };
 
+  const fetchAuthenticatorAccounts = async (token) => {
+    try {
+      const res = await axios.get(`${API_BASE}/users/2fa/accounts`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setAuthenticatorAccounts(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch authenticator accounts", err);
+    }
+  };
+
   const handleUpdateRecovery = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -367,7 +424,16 @@ function App() {
       });
 
       if (loginRes.data.success) {
-        const userData = loginRes.data.data;
+        const data = loginRes.data.data;
+        
+        if (data.status === '2FA_REQUIRED') {
+          setTempToken(data.tempToken);
+          setView('login-2fa');
+          setLoading(false);
+          return;
+        }
+
+        const userData = data;
         const token = userData.accessToken;
         const userAccountType = userData.accountType;
 
@@ -393,6 +459,7 @@ function App() {
             lastName: userData.lastName
           });
           
+          setFormData(prev => ({ ...prev, identifier: userData.email, firstName: userData.firstName, lastName: userData.lastName }));
           setAccessToken(token);
           fetchEmails(token);
           fetchSessions(token);
@@ -424,6 +491,40 @@ function App() {
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid credentials');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyLogin2fa = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post(`${API_BASE}/auth/login/2fa`, {
+        tempToken: tempToken,
+        code: formData.otp
+      });
+      if (res.data.success) {
+        const userData = res.data.data;
+        const token = userData.accessToken;
+        
+        saveAccount(token, {
+          email: userData.email,
+          username: userData.username,
+          firstName: userData.firstName,
+          lastName: userData.lastName
+        });
+        
+        setAccessToken(token);
+        fetchEmails(token);
+        fetchSessions(token);
+        fetchExternalSessions(token);
+        fetchRecoveryInfo(token);
+        setView('dashboard');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid 2FA code');
     } finally {
       setLoading(false);
     }
@@ -601,12 +702,254 @@ function App() {
     }
   };
 
-  if (view === 'dashboard') {
+  const handleSwitchAccount = (account) => {
+    localStorage.setItem('bnx_accessToken', account.token);
+    localStorage.setItem('bnx_userData', JSON.stringify(account.userData));
+    setAccessToken(account.token);
+    setShowAccountSwitcher(false);
+    window.location.reload(); 
+  };
+
+  const handleSignOutAll = () => {
+    localStorage.removeItem('bnx_accessToken');
+    localStorage.removeItem('bnx_userData');
+    localStorage.removeItem('bnx_accounts');
+    setAccounts([]);
+    window.location.reload();
+  };
+
+  const fetchFullProfile = async (token) => {
+    setLoading(true);
+    try {
+      const [meRes, settingsRes, recoveryRes] = await Promise.all([
+        axios.get(`${API_BASE}/users/me`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE}/users/settings`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_BASE}/users/recovery`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      if (meRes.data.success) setProfileData(meRes.data.data);
+      if (settingsRes.data.success) setSettingsData(settingsRes.data.data);
+      if (recoveryRes.data.success) {
+        setRecoveryInfo({
+          recoveryEmail: recoveryRes.data.data.recoveryEmail,
+          phoneNumber: recoveryRes.data.data.phoneNumber
+        });
+      }
+    } catch (err) {
+      console.error("Failed to fetch full profile:", err);
+      setError("Failed to load profile details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfileClick = () => {
+    // fetchFullProfile(accessToken);
+    // setView('profile-details');
+    window.open('https://account.beta-softnet.com?token=' + accessToken, '_blank');
+  };
+
+  const handleAddAccount = () => {
+    setShowAccountSwitcher(false);
+    setView('login-email');
+    setFormData(prev => ({ ...prev, identifier: '', password: '' }));
+  };
+
+  if (view === 'profile-details') {
     return (
       <div className="dashboard-container">
         <aside className="dashboard-sidebar">
           <div className="sidebar-brand">
-            <img src={betaLogo} alt="B2Auth" className="sidebar-logo-img" />
+            <img src={authLogo} alt="B2Auth" className="sidebar-logo-img" />
+            <span className="brand-text">B2Auth</span>
+          </div>
+          <nav className="sidebar-nav">
+            <button className="sidebar-item" onClick={() => setView('dashboard')}>
+              <div className="icon-box"><ChevronRight size={18} style={{transform: 'rotate(180deg)'}} /></div>
+              <span className="label">Back to Dashboard</span>
+            </button>
+          </nav>
+        </aside>
+
+        <main className="dashboard-content profile-page-content">
+          <header className="section-header">
+            <h2>Your B2Auth Account</h2>
+            <p>Manage your personal info, security across BNX services.</p>
+          </header>
+
+          <div className="profile-card-elite animate-scale-in">
+            <div className="profile-hero-section">
+              <div className="profile-cover"></div>
+              <div className="profile-header-main">
+                <div className="large-avatar-circle">
+                  {profileData?.name?.[0] || formData.firstName?.[0] || 'U'}
+                </div>
+                <div className="profile-titles">
+                  <h3>{profileData?.name || `${formData.firstName} ${formData.lastName}`}</h3>
+                  <p>{profileData?.email || formData.identifier}</p>
+                  <div className="account-badge">{profileData?.accountType || 'PERSONAL'} ACCOUNT</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-details-grid">
+              <div className="detail-category">
+                <h4><User size={18} /> Personal Information</h4>
+                <div className="info-list">
+                  <div className="info-item">
+                    <span className="info-label">Full Name</span>
+                    <span className="info-value">{profileData?.name || 'Not set'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Display Email</span>
+                    <span className="info-value">{profileData?.email || 'Not set'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Location</span>
+                    <span className="info-value">{settingsData?.location || 'Not set'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Job Title</span>
+                    <span className="info-value">{settingsData?.jobTitle || 'Not set'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-category">
+                <h4><ShieldCheck size={18} /> Security & Recovery</h4>
+                <div className="info-list">
+                  <div className="info-item">
+                    <span className="info-label">Recovery Email</span>
+                    <span className="info-value">{recoveryInfo.recoveryEmail || 'Not configured'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Phone Number</span>
+                    <span className="info-value">{recoveryInfo.phoneNumber || 'Not configured'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">2FA Status</span>
+                    <span className="info-value">{settingsData?.twoFactorEnabled ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Storage Limit</span>
+                    <span className="info-value">{settingsData?.storageLimit || '5 GB'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* <div className="detail-category">
+                <h4><Settings size={18} /> Preferences</h4>
+                <div className="info-list">
+                  <div className="info-item">
+                    <span className="info-label">Display Language</span>
+                    <span className="info-value">{settingsData?.language || 'English (US)'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Theme Preference</span>
+                    <span className="info-value" style={{textTransform: 'capitalize'}}>{settingsData?.themeMode || 'Light'}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">Accent Color</span>
+                    <div className="color-preview-box" style={{backgroundColor: settingsData?.accentColor || '#4f46e5'}}></div>
+                  </div>
+                </div>
+              </div> */}
+            </div>
+
+            <footer className="profile-card-footer">
+              <button className="primary-btn" onClick={() => { setDashboardTab('settings'); setView('dashboard'); }}>
+                Go to Settings
+              </button>
+            </footer>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (view === 'dashboard') {
+    return (
+      <div className="dashboard-container">
+        {/* Top Navigation / Account Switcher */}
+        <header className="dashboard-topbar">
+          <div className="topbar-left">
+            <h1 className="tab-title">
+              {dashboardTab === 'emails' ? 'Dashboard' : 
+               dashboardTab === 'sessions' ? 'Security' :
+               dashboardTab === 'apps' ? 'Connected Apps' : 'Settings'}
+            </h1>
+          </div>
+          
+          <div className="topbar-right">
+            <div className="account-switcher-container">
+              <button 
+                className="profile-trigger-btn" 
+                onClick={() => setShowAccountSwitcher(!showAccountSwitcher)}
+              >
+                <div className="avatar-circle-elite">
+                  {formData.firstName?.[0] || formData.identifier?.[0]?.toUpperCase() || 'U'}
+                </div>
+              </button>
+
+              {showAccountSwitcher && (
+                <>
+                  <div className="switcher-overlay-fixed" onClick={() => setShowAccountSwitcher(false)} />
+                  <div className="switcher-panel animate-scale-in">
+                    <div className="current-account-banner">
+                      <div className="banner-avatar">
+                        {formData.firstName?.[0] || formData.identifier?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                      <div className="banner-info">
+                        <div className="banner-name">{formData.firstName} {formData.lastName}</div>
+                        <div className="banner-email">{formData.identifier}</div>
+                      </div>
+                      <button className="manage-link">Manage your Account</button>
+                    </div>
+
+                    <div className="other-accounts-section">
+                      {accounts.filter(a => a.token !== accessToken).map(account => (
+                        <div 
+                          key={account.userData?.email} 
+                          className="account-row" 
+                          onClick={() => handleSwitchAccount(account)}
+                        >
+                          <div className="row-avatar">
+                            {account.userData?.firstName?.[0] || account.userData?.email?.[0]?.toUpperCase() || 'U'}
+                          </div>
+                          <div className="row-info">
+                            <div className="row-name">{account.userData?.firstName} {account.userData?.lastName}</div>
+                            <div className="row-email">{account.userData?.email}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="switcher-actions-list">
+                      <button className="action-item-btn" onClick={handleAddAccount}>
+                        <Plus size={18} />
+                        <span>Add another account</span>
+                      </button>
+                      <button className="action-item-btn" onClick={handleSignOutAll}>
+                        <LogOut size={18} />
+                        <span>Sign out of all accounts</span>
+                      </button>
+                    </div>
+
+                    <footer className="switcher-legal">
+                      <span>Privacy Policy</span>
+                      <span className="dot">•</span>
+                      <span>Terms of Service</span>
+                    </footer>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <aside className="dashboard-sidebar">
+          <div className="sidebar-brand">
+            <img src={authLogo} alt="B2Auth" className="sidebar-logo-img" />
             <span className="brand-text">B2Auth</span>
           </div>
           
@@ -633,6 +976,16 @@ function App() {
               <span className="label">Apps</span>
             </button>
             <button 
+              className={`sidebar-item ${dashboardTab === 'authenticator' ? 'active' : ''}`}
+              onClick={() => {
+                setDashboardTab('authenticator');
+                fetchAuthenticatorAccounts(accessToken);
+              }}
+            >
+              <div className="icon-box"><Smartphone size={18} /></div>
+              <span className="label">Authenticator</span>
+            </button>
+            <button 
               className={`sidebar-item ${dashboardTab === 'settings' ? 'active' : ''}`}
               onClick={() => setDashboardTab('settings')}
             >
@@ -644,16 +997,16 @@ function App() {
           <div className="sidebar-spacer"></div>
           
           <footer className="sidebar-footer">
-            <div className="user-profile-card" onClick={() => setView('account-selection')}>
+            {/* <div className="user-profile-card" onClick={handleProfileClick}>
               <div className="avatar">
                 {formData.firstName?.[0] || 'U'}
               </div>
               <div className="user-details">
                 <div className="user-name">{formData.firstName} {formData.lastName}</div>
-                <div className="user-email">{formData.identifier}</div>
+                <div className="user-email">Manage</div>
               </div>
               <ChevronRight size={16} className="switch-arrow" />
-            </div>
+            </div> */}
             
             <button className="sidebar-item logout-minimal" onClick={() => {
               localStorage.removeItem('bnx_accessToken');
@@ -709,6 +1062,34 @@ function App() {
                     <Plus size={20} />
                     <span>Add New Mailbox</span>
                   </button>
+                </div>
+
+                <div className="accounts-dashboard-section" style={{marginTop: '48px'}}>
+                  <header className="section-header">
+                    <h2>Logged-in Identities</h2>
+                    <p>Quickly switch between your active B2Auth accounts.</p>
+                  </header>
+                  <div className="card-list">
+                    {accounts.map(account => (
+                      <div 
+                        key={account.userData.email} 
+                        className={`glass-card account-card-horizontal ${account.token === accessToken ? 'active-identity' : ''}`}
+                        onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
+                      >
+                        <div className="account-avatar-small">
+                          {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                        </div>
+                        <div className="card-info">
+                          <div className="card-main-text">
+                            {account.userData.firstName} {account.userData.lastName}
+                            {account.token === accessToken && <span className="current-badge">Current</span>}
+                          </div>
+                          <div className="card-sub-text">{account.userData.email}</div>
+                        </div>
+                        {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -1009,6 +1390,48 @@ function App() {
                 </button>
               )}
             </div>
+          )}
+
+          {view === 'login-2fa' && (
+            <form onSubmit={handleVerifyLogin2fa} className="auth-step-merged">
+              <div className="login-grid">
+                <div className="input-field-group">
+                  <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>2-Step Verification</label>
+                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
+                    To help keep your account safe, B2Auth wants to make sure it's really you. 
+                    Enter the 6-digit code from your <b>Authenticator App</b>.
+                  </p>
+                  <div className="login-input-wrapper">
+                    <input 
+                      type="text" 
+                      name="otp"
+                      placeholder="Enter code"
+                      value={formData.otp}
+                      onChange={handleInputChange}
+                      required
+                      autoFocus
+                      className="otp-input-elite"
+                      maxLength="6"
+                      style={{ 
+                        width: '100%', 
+                        padding: '16px', 
+                        borderRadius: '12px', 
+                        border: '2px solid #e2e8f0', 
+                        fontSize: '24px', 
+                        fontWeight: '700', 
+                        textAlign: 'center',
+                        letterSpacing: '4px'
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="button-group-right" style={{ marginTop: '32px' }}>
+                <button type="submit" className="primary-btn" disabled={loading}>
+                  {loading ? 'Verifying...' : 'Next'}
+                </button>
+              </div>
+            </form>
           )}
 
           {(view === 'login-email' || view === 'login-password') && (
