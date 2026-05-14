@@ -8,7 +8,9 @@ import {
   LockIcon,
   LockOpenIcon,
   Check,
-  Circle
+  Circle,
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import betaLogo from './assets/beta2.png';
