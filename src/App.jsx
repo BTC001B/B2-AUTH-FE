@@ -578,19 +578,44 @@ function App() {
         const userData = res.data.data;
         const token = userData.accessToken;
         
-        saveAccount(token, {
-          email: userData.email,
-          username: userData.username,
-          firstName: userData.firstName,
-          lastName: userData.lastName
-        });
-        
-        setAccessToken(token);
-        fetchEmails(token);
-        fetchSessions(token);
-        fetchExternalSessions(token);
-        fetchRecoveryInfo(token);
-        setView('dashboard');
+        const isB2AuthFlow = window.location.hostname.includes('b2auth.com') || window.location.hostname === 'localhost';
+
+        if (isB2AuthFlow && !clientId) {
+          saveAccount(token, {
+            email: userData.email,
+            username: userData.username,
+            firstName: userData.firstName,
+            lastName: userData.lastName
+          });
+          
+          setFormData(prev => ({ ...prev, identifier: userData.email, firstName: userData.firstName, lastName: userData.lastName }));
+          setAccessToken(token);
+          fetchEmails(token);
+          fetchSessions(token);
+          fetchExternalSessions(token);
+          fetchRecoveryInfo(token);
+          setView('dashboard');
+        } else if (clientId && redirectUri) {
+          saveAccount(token, {
+            email: userData.email,
+            username: userData.username,
+            firstName: userData.firstName,
+            lastName: userData.lastName
+          });
+
+          const authRes = await axios.post(
+            `${API_BASE}/oauth/authorize`,
+            { clientId, redirectUri, state },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          if (authRes.data.success) {
+            const code = authRes.data.data.code;
+            window.location.href = `${redirectUri}?code=${code}&state=${state}`;
+          }
+        } else {
+          window.location.href = 'https://mail.bnxmail.com';
+        }
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid 2FA code');
