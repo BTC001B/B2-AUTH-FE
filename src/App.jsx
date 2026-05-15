@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { 
   LayoutDashboard, Mail, ShieldCheck, Settings, Activity, LogOut, 
@@ -260,6 +260,7 @@ function App() {
   const [manualAuthData, setManualAuthData] = useState({ name: '', secret: '' });
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const topbarRightRef = useRef(null);
 
   const showLegalPage = (documentKey) => {
     const path = documentKey === 'privacy' ? '/privacy-policy' : '/terms-and-conditions';
@@ -272,6 +273,24 @@ function App() {
     window.history.pushState({}, '', '/');
     setView(accessToken || localStorage.getItem('bnx_accessToken') ? 'dashboard' : 'login-email');
   };
+
+  useEffect(() => {
+    if (!showAccountSwitcher) return;
+
+    const handleOutsideClick = (event) => {
+      if (topbarRightRef.current && !topbarRightRef.current.contains(event.target)) {
+        setShowAccountSwitcher(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('touchstart', handleOutsideClick);
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('touchstart', handleOutsideClick);
+    };
+  }, [showAccountSwitcher]);
 
   const handleLogout = () => {
     localStorage.removeItem('bnx_accessToken');
@@ -1292,7 +1311,7 @@ function App() {
             </h1>
           </div>
           
-          <div className="topbar-right">
+          <div className="topbar-right" ref={topbarRightRef}>
             <div className="account-switcher-container">
               <button 
                 className="profile-trigger-btn" 
