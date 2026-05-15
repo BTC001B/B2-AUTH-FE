@@ -631,6 +631,27 @@ function App() {
     }
   };
 
+  const handleDisable2FA = async () => {
+    if (!window.confirm("Are you sure you want to disable 2-Step Verification? This will make your account less secure.")) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE}/users/2fa/disable`, {}, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.data.success) {
+        setProfileData(prev => prev ? ({ ...prev, twoFactorEnabled: false }) : prev);
+        setSettingsData(prev => prev ? ({ ...prev, twoFactorEnabled: false }) : prev);
+        alert("2-Step Verification has been disabled.");
+      }
+    } catch (err) {
+      setError("Failed to disable 2-Step Verification");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleChangePassword = async () => {
     setLoading(true);
     setError('');
@@ -1599,17 +1620,20 @@ function App() {
                           <div className="identity-sub">{(profileData?.twoFactorEnabled || settingsData?.twoFactorEnabled) ? 'On' : 'Off'}</div>
                         </div>
                         <div className="identity-trailing">
-                          {(profileData?.twoFactorEnabled || settingsData?.twoFactorEnabled) ? (
-                            <div className="status-indicator-pill on">Enabled</div>
-                          ) : (
-                            <button 
-                              className="row-action-btn"
-                              onClick={() => window.open(`https://account.beta-softnet.com/security?token=${accessToken}`, '_blank')}
-                            >
-                              Enable
-                            </button>
-                          )}
-                        </div>
+                           {(profileData?.twoFactorEnabled || settingsData?.twoFactorEnabled) ? (
+                             <div className="status-with-action">
+                               <div className="status-indicator-pill on">Enabled</div>
+                               <button className="row-action-btn disable-btn" onClick={handleDisable2FA}>Disable</button>
+                             </div>
+                           ) : (
+                             <button 
+                               className="row-action-btn"
+                               onClick={() => window.open(`https://account.beta-softnet.com/security?token=${accessToken}`, '_blank')}
+                             >
+                               Enable
+                             </button>
+                           )}
+                         </div>
                       </div>
                     </div>
                   </div>

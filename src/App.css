@@ -2738,3 +2738,18 @@ body {
 .scrollable-identity-container::-webkit-scrollbar-thumb:hover {
   background: var(--secondary);
 }
+.status-with-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.disable-btn {
+  color: var(--danger) !important;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.disable-btn:hover {
+  text-decoration: underline;
+}
