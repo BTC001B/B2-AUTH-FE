@@ -243,6 +243,7 @@ function App() {
               lastName: userData.lastName || ''
             }));
             // fetch others in parallel
+            fetchFullProfile(storedToken);
             fetchSessions(storedToken);
             fetchExternalSessions(storedToken);
             fetchRecoveryInfo(storedToken);
@@ -1134,28 +1135,17 @@ function App() {
               <span className="label">Dashboard</span>
             </button>
             <button 
-              className={`sidebar-item ${dashboardTab === 'sessions' ? 'active' : ''}`}
-              onClick={() => setDashboardTab('sessions')}
+              className={`sidebar-item ${dashboardTab === 'security' ? 'active' : ''}`}
+              onClick={() => {
+                setDashboardTab('security');
+                fetchFullProfile(accessToken);
+                fetchAuthenticatorAccounts(accessToken);
+                fetchSessions(accessToken);
+                fetchExternalSessions(accessToken);
+              }}
             >
               <div className="icon-box"><ShieldCheck size={18} /></div>
               <span className="label">Security</span>
-            </button>
-            <button 
-              className={`sidebar-item ${dashboardTab === 'apps' ? 'active' : ''}`}
-              onClick={() => setDashboardTab('apps')}
-            >
-              <div className="icon-box"><Globe size={18} /></div>
-              <span className="label">Apps</span>
-            </button>
-            <button 
-              className={`sidebar-item ${dashboardTab === 'authenticator' ? 'active' : ''}`}
-              onClick={() => {
-                setDashboardTab('authenticator');
-                fetchAuthenticatorAccounts(accessToken);
-              }}
-            >
-              <div className="icon-box"><Smartphone size={18} /></div>
-              <span className="label">Authenticator</span>
             </button>
             <button 
               className={`sidebar-item ${dashboardTab === 'settings' ? 'active' : ''}`}
@@ -1180,11 +1170,7 @@ function App() {
               <ChevronRight size={16} className="switch-arrow" />
             </div> */}
             
-            <button className="sidebar-item logout-minimal" onClick={() => {
-              localStorage.removeItem('bnx_accessToken');
-              localStorage.removeItem('bnx_userData');
-              window.location.reload();
-            }}>
+            <button className="sidebar-item logout-minimal" onClick={handleLogout}>
               <LogOut size={16} />
               <span>Sign Out</span>
             </button>
@@ -1202,7 +1188,7 @@ function App() {
                 className="content-section"
               >
                 <header className="section-header">
-                  <h2>Email Identities</h2>
+                  <h2>Admin</h2>
                   <p>Manage your linked mail accounts and primary address.</p>
                 </header>
                 <div className="identity-container animate-scale-in">
@@ -1314,216 +1300,145 @@ function App() {
               </motion.div>
             )}
 
-            {dashboardTab === 'sessions' && (
+            {dashboardTab === 'security' && (
               <motion.div 
-                key="sessions"
+                key="security"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 className="content-section"
               >
                 <header className="section-header">
-                  <h2>Active Sessions</h2>
-                  <p>Devices currently logged into your B2Auth Account.</p>
+                  <h2>Security Dashboard</h2>
+                  <p>Settings and recommendations to help you keep your account secure.</p>
                 </header>
-                <div className="card-list">
-                  {sessions.map(session => {
-                    const device = parseUserAgent(session.userAgent);
-                    return (
-                      <div key={session.id} className={`glass-card session-card ${session.isCurrentSession ? 'current' : ''}`}>
-                        <div className="device-icon">
-                          {device.type === 'phone' ? <Smartphone size={24} /> : 
-                           device.type === 'tablet' ? <Tablet size={24} /> : <Monitor size={24} />}
+
+                <div className="security-grid">
+                  {/* Signing in to B2Auth Section */}
+                  <div className="security-section">
+                    <h3 className="identity-group-title"><LockIcon size={14} /> Signing in to B2Auth</h3>
+                    <div className="identity-container">
+                      <div className="identity-row">
+                        <div className="identity-leading">
+                          <div className="identity-icon-box"><LockIcon size={18} /></div>
                         </div>
-                        <div className="card-info">
-                          <div className="card-main-text">
-                            {device.name}
-                            {session.isCurrentSession && <span className="current-indicator">Current</span>}
-                          </div>
-                          <div className="card-sub-text">
-                            <div className="meta-item"><Globe size={12} /> {session.ipAddress}</div>
-                            <div className="meta-item"><Monitor size={12} /> {session.userAgent?.split(' ')[0] || 'Browser'}</div>
-                          </div>
-                          <div className="card-meta-text">
-                            <Clock size={12} /> Created: {new Date(session.createdAt).toLocaleString()}
-                          </div>
+                        <div className="identity-info">
+                          <div className="identity-label">Password</div>
+                          <div className="identity-sub">A secure password helps protect your B2Auth Account</div>
                         </div>
-                        <div className="card-actions">
-                          {!session.isCurrentSession && (
+                        <div className="identity-trailing">
+                          <button className="row-action-btn">Change</button>
+                        </div>
+                      </div>
+                      <div className="identity-row">
+                        <div className="identity-leading">
+                          <div className="identity-icon-box"><ShieldCheck size={18} /></div>
+                        </div>
+                        <div className="identity-info">
+                          <div className="identity-label">2-Step Verification</div>
+                          <div className="identity-sub">{(profileData?.twoFactorEnabled || settingsData?.twoFactorEnabled) ? 'On' : 'Off'}</div>
+                        </div>
+                        <div className="identity-trailing">
+                          {(profileData?.twoFactorEnabled || settingsData?.twoFactorEnabled) ? (
+                            <div className="status-indicator-pill on">Enabled</div>
+                          ) : (
                             <button 
-                              className="action-btn danger"
-                              onClick={() => handleRevokeSession(session.id)}
-                              disabled={loading}
+                              className="row-action-btn"
+                              onClick={() => window.open(`https://account.beta-softnet.com/security?token=${accessToken}`, '_blank')}
                             >
-                              <Trash2 size={16} />
-                              <span>Revoke</span>
+                              Enable
                             </button>
                           )}
                         </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
+
+                  {/* Cloud Authenticator Section */}
+                  <div className="security-section">
+                    <div className="header-with-flex">
+                      <h3 className="identity-group-title"><Smartphone size={14} /> Cloud Authenticator</h3>
+                      <button className="text-link-btn" onClick={() => setShowAddAuthModal(true)}>Add account</button>
+                    </div>
+                    <div className="identity-container">
+                      {authenticatorAccounts.length > 0 ? authenticatorAccounts.map(acc => (
+                        <div key={acc.id} className="identity-row auth-row">
+                          <div className="identity-leading">
+                            <div className="identity-icon-box"><Smartphone size={18} /></div>
+                          </div>
+                          <div className="identity-info">
+                            <div className="identity-label">{acc.accountName}</div>
+                            <AuthenticatorCode secret={acc.secretKey} />
+                          </div>
+                          <div className="identity-trailing">
+                            <button className="icon-action-btn" onClick={() => handleDeleteAuthenticatorAccount(acc.id)}><Trash2 size={14} /></button>
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="empty-row-hint">No authenticator accounts synced.</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Your Devices Section */}
+                  <div className="security-section">
+                    <h3 className="identity-group-title"><Monitor size={14} /> Your devices</h3>
+                    <div className="identity-container">
+                      {sessions.map(session => {
+                        const device = parseUserAgent(session.userAgent);
+                        return (
+                          <div key={session.id} className="identity-row">
+                            <div className="identity-leading">
+                              <div className="identity-icon-box">
+                                {device.type === 'phone' ? <Smartphone size={18} /> : 
+                                 device.type === 'tablet' ? <Tablet size={18} /> : <Monitor size={18} />}
+                              </div>
+                            </div>
+                            <div className="identity-info">
+                              <div className="identity-label">
+                                {device.name}
+                                {session.isCurrentSession && <span className="current-badge-mini">This device</span>}
+                              </div>
+                              <div className="identity-sub">{session.ipAddress} • {session.userAgent?.split(' ')[0] || 'Browser'}</div>
+                            </div>
+                            <div className="identity-trailing">
+                              {!session.isCurrentSession && (
+                                <button className="row-action-btn danger" onClick={() => handleRevokeSession(session.id)}>Sign out</button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Connected Apps Section */}
+                  <div className="security-section">
+                    <h3 className="identity-group-title"><Globe size={14} /> Third-party apps with account access</h3>
+                    <div className="identity-container">
+                      {externalSessions.length > 0 ? externalSessions.map(session => (
+                        <div key={session.id} className="identity-row">
+                          <div className="identity-leading">
+                            <div className="identity-icon-box"><Globe size={18} /></div>
+                          </div>
+                          <div className="identity-info">
+                            <div className="identity-label">{session.appName}</div>
+                            <div className="identity-sub">Has access to basic profile info</div>
+                          </div>
+                          <div className="identity-trailing">
+                            <button className="row-action-btn">Remove access</button>
+                          </div>
+                        </div>
+                      )) : (
+                        <div className="empty-row-hint">No apps have access to your account.</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}
 
-            {dashboardTab === 'apps' && (
-              <motion.div 
-                key="apps"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="content-section"
-              >
-                <header className="section-header">
-                  <h2>Connected Applications</h2>
-                  <p>Applications you have authorized via SSO.</p>
-                </header>
 
-                {externalSessions.length > 0 ? (
-                  <div className="card-list">
-                    {externalSessions.map(session => (
-                      <div key={session.id} className="glass-card session-card external">
-                        <div className="device-icon app">
-                          <Globe size={24} />
-                        </div>
-                        <div className="card-info">
-                          <div className="card-main-text">
-                            {session.appName}
-                            <span className="app-id-pill">{session.clientId}</span>
-                          </div>
-                          <div className="card-sub-text">
-                            <div className="meta-item"><Globe size={12} /> {session.ipAddress}</div>
-                            <div className="meta-item"><Clock size={12} /> Logged in: {new Date(session.loggedInAt).toLocaleString()}</div>
-                          </div>
-                          <div className="card-meta-text">
-                            {session.userAgent?.substring(0, 80)}...
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="activity-placeholder">
-                    <Globe size={64} />
-                    <h3>No Apps Authorized</h3>
-                    <p>When you log in to external apps via B2Auth, they will appear here.</p>
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {dashboardTab === 'authenticator' && (
-              <motion.div 
-                key="authenticator"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="content-section"
-              >
-                <header className="section-header">
-                  <div className="header-with-action">
-                    <div>
-                      <h2>B2Auth Cloud Authenticator</h2>
-                      <p>Your synced 2FA codes are available on all your devices.</p>
-                    </div>
-                    <button className="action-btn primary-solid" onClick={() => setShowAddAuthModal(true)}>
-                      <Plus size={16} />
-                      <span>Add Account</span>
-                    </button>
-                  </div>
-                </header>
-
-                <div className="authenticator-grid">
-                  {authenticatorAccounts.length > 0 ? (
-                    authenticatorAccounts.map(acc => (
-                      <div key={acc.id} className="glass-card auth-code-card">
-                        <div className="auth-card-header">
-                          <div className="auth-icon-box"><Smartphone size={20} /></div>
-                          <div className="auth-account-info">
-                            <div className="auth-name">{acc.accountName}</div>
-                            <div className="auth-issuer">B2Auth Synced</div>
-                          </div>
-                        </div>
-                        <AuthenticatorCode secret={acc.secretKey} />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="activity-placeholder">
-                      <Smartphone size={64} />
-                      <h3>No Authenticator Accounts</h3>
-                      <p>Enable 2FA on your apps to see synced codes here.</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Add Authenticator Account Modal */}
-                {showAddAuthModal && (
-                  <div className="auth-modal-overlay">
-                    <div className="auth-modal-content animate-scale-in">
-                      <div className="auth-modal-header">
-                        <h3>Add New Account</h3>
-                        <button className="auth-close-btn" onClick={() => setShowAddAuthModal(false)}>
-                          <X size={20} />
-                        </button>
-                      </div>
-
-                      <div className="auth-tab-switcher">
-                        <button 
-                          className={addAuthMode === 'scan' ? 'active' : ''} 
-                          onClick={() => setAddAuthMode('scan')}
-                        >
-                          Scan QR Code
-                        </button>
-                        <button 
-                          className={addAuthMode === 'manual' ? 'active' : ''} 
-                          onClick={() => setAddAuthMode('manual')}
-                        >
-                          Manual Entry
-                        </button>
-                      </div>
-
-                      <div className="auth-modal-body">
-                        {addAuthMode === 'scan' ? (
-                          <div className="qr-scanner-container">
-                            <div id="reader" style={{width: '100%'}}></div>
-                            <p className="scanner-hint">Point your camera at the QR code</p>
-                          </div>
-                        ) : (
-                          <div className="manual-entry-form">
-                            <div className="auth-input-group">
-                              <label>Account Name</label>
-                              <input 
-                                type="text" 
-                                placeholder="e.g. GitHub: vishal" 
-                                value={manualAuthData.name}
-                                onChange={e => setManualAuthData({...manualAuthData, name: e.target.value})}
-                              />
-                            </div>
-                            <div className="auth-input-group">
-                              <label>Secret Key</label>
-                              <input 
-                                type="text" 
-                                placeholder="Enter 2FA secret" 
-                                value={manualAuthData.secret}
-                                onChange={e => setManualAuthData({...manualAuthData, secret: e.target.value})}
-                              />
-                            </div>
-                            <button 
-                              className="action-btn primary-solid full-width"
-                              onClick={() => handleAddAuthenticatorAccount(manualAuthData.name, manualAuthData.secret)}
-                              disabled={!manualAuthData.name || !manualAuthData.secret}
-                            >
-                              Save Account
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
 
             {dashboardTab === 'settings' && (
               <motion.div 
