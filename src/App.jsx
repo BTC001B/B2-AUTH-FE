@@ -60,8 +60,167 @@ const AuthenticatorCode = ({ secret }) => {
 
 const API_BASE = import.meta.env.VITE_API_BASE;
 
+const legalDocuments = {
+  terms: {
+    eyebrow: 'Terms and Conditions',
+    title: 'Terms and Conditions for b2auth',
+    updated: 'Last Updated: May 2026',
+    entity: 'Beta Softnet (OPC) Private Limited ("BETA")',
+    sections: [
+      {
+        title: '1. Scope of Service',
+        paragraphs: [
+          'b2auth is a security authentication product of Beta Softnet (OPC) Pvt Ltd. By using b2auth, you agree to these terms. b2auth provides Multi-Factor Authentication (MFA), secure login protocols, and identity verification for the BETA ecosystem, including BNXMail, Cliks, Cliks Business, and integrated third-party services.'
+        ]
+      },
+      {
+        title: '2. User Responsibility & Account Security',
+        items: [
+          { label: 'Identity Linkage', text: 'Your b2auth profile is linked to your accounts.beta-softnet.com ID. You are responsible for maintaining the confidentiality of your master credentials.' },
+          { label: 'Device Security', text: 'You must ensure that the mobile device running b2auth is secure. BETA is not liable for unauthorized access resulting from a lost, stolen, or compromised device.' },
+          { label: 'True Identity', text: 'You agree to provide accurate information during the KYC/Verification process required for the BETA ecosystem.' }
+        ]
+      },
+      {
+        title: '3. Data Privacy & Compliance',
+        items: [
+          { label: 'Consent', text: 'By using b2auth, you grant BETA the right to process biometric data, if enabled, and device metadata solely for authentication purposes.' },
+          { label: 'No Third-Party Sharing', text: 'BETA will never sell your authentication logs or identity data to third-party advertisers.' },
+          { label: 'Data Erasure', text: 'Users can request account deletion via accounts.beta-softnet.com, which will revoke all b2auth permissions.' }
+        ]
+      },
+      {
+        title: '4. Intellectual Property',
+        paragraphs: [
+          'The "b2auth" name, logo, and proprietary authentication algorithms are the exclusive property of Beta Softnet (OPC) Pvt Ltd. Any attempt to reverse-engineer the b2auth protocol is strictly prohibited and may lead to legal action.'
+        ]
+      },
+      {
+        title: '5. Limitation of Liability',
+        paragraphs: [
+          'While b2auth employs high-level encryption, BETA does not guarantee that the service will be 100% error-free or immune to sophisticated cyber-attacks. BETA shall not be liable for any indirect, incidental, or consequential damages arising from the use or inability to use the app.',
+          'When a user accepts the Terms and Conditions on b2auth, that acceptance may be reflected across BNXMail and Cliks via the accounts.beta-softnet.com database as centralized consent.',
+          'In case of a security breach, BETA reserves the right to temporarily freeze the linked Cliks Wallet to protect user funds.'
+        ]
+      }
+    ]
+  },
+  privacy: {
+    eyebrow: 'Privacy Policy',
+    title: 'Privacy Policy: b2auth',
+    updated: 'Effective Date: May 15, 2026',
+    entity: 'Beta Softnet (OPC) Private Limited ("BETA")',
+    sections: [
+      {
+        title: '1. Introduction',
+        paragraphs: [
+          'At BETA, we believe security is a fundamental right. This Privacy Policy explains how b2auth collects, protects, and manages your information to provide secure authentication across the BETA ecosystem.'
+        ]
+      },
+      {
+        title: '2. Information We Collect',
+        paragraphs: ['We only collect data that is essential for verifying your identity:'],
+        items: [
+          { label: 'Identity Data', text: 'Your name, email, and phone number linked to your account.beta-softnet.com profile.' },
+          { label: 'Device Metadata', text: 'Unique device ID (UUID), OS version, and IP address to support Trusted Device binding.' },
+          { label: 'Biometric Data', text: 'b2auth uses your device native Fingerprint or FaceID. BETA does not store your actual biometric patterns on our servers; we only receive a Success/Fail token from your device secure enclave.' },
+          { label: 'Authentication Logs', text: 'Timestamps of successful and failed login attempts to detect and prevent hacking.' }
+        ]
+      },
+      {
+        title: '3. How We Use Your Data',
+        items: [
+          { text: 'To verify your identity during logins.' },
+          { text: 'To send Critical Security Alerts if a login is attempted from an unrecognized location.' },
+          { text: 'To prevent fraudulent access to your Cliks Wallet and BNXMail accounts.' }
+        ]
+      },
+      {
+        title: '4. Data Sharing & Third Parties',
+        items: [
+          { label: 'Zero Third-Party Sharing', text: 'We never sell, rent, or trade your personal data to advertisers or third-party data brokers.' },
+          { label: 'Ecosystem Integration', text: 'Your data is shared internally with account.beta-softnet.com to provide a Single Sign-On (SSO) experience across all BETA products.' }
+        ]
+      },
+      {
+        title: '5. User Rights (Compliance)',
+        items: [
+          { label: 'Right to Access', text: 'You can view all data we hold about you at account.beta-softnet.com.' },
+          { label: 'Right to Erase', text: 'You can request the deletion of your b2auth profile. Note: This will revoke access to all linked BETA services for security reasons.' },
+          { label: 'Grievance Officer', text: 'As per Indian law, for any data concerns, contact our Grievance Officer at legal@beta-softnet.com.' }
+        ]
+      }
+    ]
+  }
+};
+
+const getInitialView = () => {
+  if (window.location.pathname === '/privacy-policy') return 'legal-privacy';
+  if (window.location.pathname === '/terms-and-conditions') return 'legal-terms';
+  return 'login-email';
+};
+
+const LegalPage = ({ documentKey, onBack, onShowDocument }) => {
+  const document = legalDocuments[documentKey];
+
+  return (
+    <div className="legal-page-shell">
+      <header className="legal-topbar">
+        <button className="legal-brand" onClick={onBack}>
+          <img src={authLogo} alt="B2Auth" />
+          <span>B2Auth</span>
+        </button>
+        <div className="legal-nav-actions">
+          <button
+            className={`legal-nav-link ${documentKey === 'privacy' ? 'active' : ''}`}
+            onClick={() => onShowDocument('privacy')}
+          >
+            Privacy Policy
+          </button>
+          <button
+            className={`legal-nav-link ${documentKey === 'terms' ? 'active' : ''}`}
+            onClick={() => onShowDocument('terms')}
+          >
+            Terms
+          </button>
+        </div>
+      </header>
+
+      <main className="legal-document-wrap">
+        <section className="legal-hero">
+          <div className="legal-eyebrow">{document.eyebrow}</div>
+          <h1>{document.title}</h1>
+          <p>{document.updated}</p>
+          <p>{document.entity}</p>
+        </section>
+
+        <article className="legal-document">
+          {document.sections.map((section) => (
+            <section className="legal-section" key={section.title}>
+              <h2>{section.title}</h2>
+              {section.paragraphs?.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+              {section.items && (
+                <ul>
+                  {section.items.map((item, index) => (
+                    <li key={`${section.title}-${index}`}>
+                      {item.label && <strong>{item.label}: </strong>}
+                      {item.text}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ))}
+        </article>
+      </main>
+    </div>
+  );
+};
+
 function App() {
-  const [view, setView] = useState('login-email'); // login-email, login-password, signup-selection, signup-profile, signup-child, signup-business, signup-mail, dashboard, verifying
+  const [view, setView] = useState(getInitialView); // login-email, login-password, signup-selection, signup-profile, signup-child, signup-business, signup-mail, dashboard, verifying
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -101,6 +260,18 @@ function App() {
   const [manualAuthData, setManualAuthData] = useState({ name: '', secret: '' });
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+
+  const showLegalPage = (documentKey) => {
+    const path = documentKey === 'privacy' ? '/privacy-policy' : '/terms-and-conditions';
+    window.history.pushState({}, '', path);
+    setError('');
+    setView(`legal-${documentKey}`);
+  };
+
+  const leaveLegalPage = () => {
+    window.history.pushState({}, '', '/');
+    setView(accessToken || localStorage.getItem('bnx_accessToken') ? 'dashboard' : 'login-email');
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('bnx_accessToken');
@@ -197,6 +368,10 @@ function App() {
     const refId = params.get('reference_id');
     const cid = params.get('client_id');
     const ruri = params.get('redirect_uri');
+
+    if (window.location.pathname === '/privacy-policy' || window.location.pathname === '/terms-and-conditions') {
+      return;
+    }
 
     // MANUAL ROUTE DETECTION: Check if we are on /verification-complete
     if (window.location.pathname === '/verification-complete' || refId) {
@@ -965,6 +1140,16 @@ function App() {
     setFormData(prev => ({ ...prev, identifier: '', password: '' }));
   };
 
+  if (view === 'legal-privacy' || view === 'legal-terms') {
+    return (
+      <LegalPage
+        documentKey={view === 'legal-privacy' ? 'privacy' : 'terms'}
+        onBack={leaveLegalPage}
+        onShowDocument={showLegalPage}
+      />
+    );
+  }
+
   if (view === 'restoring') {
     return (
       <div className="restoring-container">
@@ -1163,9 +1348,9 @@ function App() {
                     </div>
 
                     <footer className="switcher-legal">
-                      <span>Privacy Policy</span>
+                      <button onClick={() => showLegalPage('privacy')}>Privacy Policy</button>
                       <span className="dot">•</span>
-                      <span>Terms of Service</span>
+                      <button onClick={() => showLegalPage('terms')}>Terms of Service</button>
                     </footer>
                   </div>
                 </>
@@ -1902,8 +2087,8 @@ function App() {
                 <div className="footer-right-links">
                   <div style={{display:'flex',flexDirection:'row',gap:'9px'}}>
                     <span>Help</span>
-                    <span>Privacy</span>
-                    <span>Terms</span>
+                    <button type="button" onClick={() => showLegalPage('privacy')}>Privacy</button>
+                    <button type="button" onClick={() => showLegalPage('terms')}>Terms</button>
                   </div>
                   <div>
                     <span style={{fontSize:'12px', color:'blue', fontFamily:'inherit'}}>Report Issue</span>
