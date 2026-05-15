@@ -100,11 +100,49 @@ function App() {
   const [addAuthMode, setAddAuthMode] = useState('scan'); // 'scan' or 'manual'
   const [manualAuthData, setManualAuthData] = useState({ name: '', secret: '' });
 
+  const handleLogout = () => {
+    localStorage.removeItem('bnx_accessToken');
+    localStorage.removeItem('bnx_userData');
+    setAccessToken('');
+    setUserEmails([]);
+    setSessions([]);
+    setExternalSessions([]);
+    setFormData({
+      identifier: '', password: '', username: '', firstName: '', lastName: '',
+      emailName: '', otp: '', newPassword: '', confirmPassword: '',
+      businessName: '', businessType: '', registrationNumber: '',
+      ownerFirstName: '', ownerLastName: '', domain: '', dob: '',
+    });
+    setView('login-email');
+  };
+
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      response => response,
+      error => {
+        if (error.response?.status === 401) {
+          console.warn("Session expired or unauthorized (401). Logging out...");
+          handleLogout();
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
+
   const saveAccount = (token, userData) => {
     const storedAccounts = JSON.parse(localStorage.getItem('bnx_accounts') || '[]');
     // Avoid duplicates by email/username
     const filteredAccounts = storedAccounts.filter(acc => acc.userData.email !== userData.email);
-    const updatedAccounts = [{ token, userData }, ...filteredAccounts];
+    // Use accountType and isPrimary from backend response
+    const updatedAccounts = [{ 
+      token, 
+      userData: {
+        ...userData,
+        accountType: userData.accountType, // Will be BUSINESS, PUBLIC, or CHILD
+        isPrimary: userData.isPrimary || false
+      } 
+    }, ...filteredAccounts];
     localStorage.setItem('bnx_accounts', JSON.stringify(updatedAccounts));
     localStorage.setItem('bnx_accessToken', token);
     localStorage.setItem('bnx_userData', JSON.stringify(userData));
@@ -185,24 +223,39 @@ function App() {
 
     // 2. Regular Session Restoration
     if (storedToken && storedUser && !refId && !cid) {
-      try {
-        const userData = JSON.parse(storedUser);
-        setAccessToken(storedToken);
-        setFormData(prev => ({
-          ...prev,
-          identifier: userData.email || userData.username || '',
-          firstName: userData.firstName || '',
-          lastName: userData.lastName || ''
-        }));
-        fetchEmails(storedToken);
-        fetchSessions(storedToken);
-        fetchExternalSessions(storedToken);
-        fetchRecoveryInfo(storedToken);
-        setView('dashboard');
-      } catch (err) {
-        console.error("Failed to restore session", err);
-        localStorage.clear();
-      }
+      const validateAndRestore = async () => {
+        setView('restoring');
+        try {
+          const userData = JSON.parse(storedUser);
+          
+          // Use fetchEmails as a validation call
+          const res = await axios.get(`${API_BASE}/emails/list`, {
+            headers: { Authorization: `Bearer ${storedToken}` }
+          });
+          
+          if (res.data.success) {
+            setAccessToken(storedToken);
+            setUserEmails(res.data.data.emails);
+            setFormData(prev => ({
+              ...prev,
+              identifier: userData.email || userData.username || '',
+              firstName: userData.firstName || '',
+              lastName: userData.lastName || ''
+            }));
+            // fetch others in parallel
+            fetchSessions(storedToken);
+            fetchExternalSessions(storedToken);
+            fetchRecoveryInfo(storedToken);
+            setView('dashboard');
+          } else {
+            handleLogout();
+          }
+        } catch (err) {
+          console.error("Session restoration failed", err);
+          handleLogout();
+        }
+      };
+      validateAndRestore();
     }
   }, []);
 
@@ -525,7 +578,9 @@ function App() {
             email: userData.email,
             username: userData.username,
             firstName: userData.firstName,
-            lastName: userData.lastName
+            lastName: userData.lastName,
+            accountType: userData.accountType,
+            isPrimary: userData.isPrimary
           });
           
           setFormData(prev => ({ ...prev, identifier: userData.email, firstName: userData.firstName, lastName: userData.lastName }));
@@ -541,7 +596,9 @@ function App() {
             email: userData.email,
             username: userData.username,
             firstName: userData.firstName,
-            lastName: userData.lastName
+            lastName: userData.lastName,
+            accountType: userData.accountType,
+            isPrimary: userData.isPrimary
           });
 
           const authRes = await axios.post(
@@ -585,7 +642,9 @@ function App() {
             email: userData.email,
             username: userData.username,
             firstName: userData.firstName,
-            lastName: userData.lastName
+            lastName: userData.lastName,
+            accountType: userData.accountType,
+            isPrimary: userData.isPrimary
           });
           
           setFormData(prev => ({ ...prev, identifier: userData.email, firstName: userData.firstName, lastName: userData.lastName }));
@@ -600,7 +659,9 @@ function App() {
             email: userData.email,
             username: userData.username,
             firstName: userData.firstName,
-            lastName: userData.lastName
+            lastName: userData.lastName,
+            accountType: userData.accountType,
+            isPrimary: userData.isPrimary
           });
 
           const authRes = await axios.post(
@@ -848,6 +909,23 @@ function App() {
     setView('login-email');
     setFormData(prev => ({ ...prev, identifier: '', password: '' }));
   };
+
+  if (view === 'restoring') {
+    return (
+      <div className="restoring-container">
+        <div className="restoring-content">
+          <img src={betaLogo} alt="B2Auth" className="loading-logo-spin" />
+          <div className="restoring-text">
+            <h3>Restoring Session</h3>
+            <p>Checking your credentials...</p>
+          </div>
+          <div className="loading-spinner-bar">
+            <div className="loading-spinner-progress"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (view === 'profile-details') {
     return (
@@ -1127,22 +1205,25 @@ function App() {
                   <h2>Email Identities</h2>
                   <p>Manage your linked mail accounts and primary address.</p>
                 </header>
-                <div className="card-list">
+                <div className="identity-container animate-scale-in">
                   {userEmails.map(email => (
-                    <div key={email.id} className={`glass-card email-card ${email.isPrimary ? 'primary' : ''}`}>
-                      <div className="card-info">
-                        <div className="card-main-text">
-                          {email.email}
-                          {email.isPrimary && <CheckCircle size={16} className="success-icon" />}
-                        </div>
-                        <div className="card-sub-text">{email.emailName} • {email.active ? 'Active' : 'Inactive'}</div>
+                    <div key={email.id} className="identity-row">
+                      <div className="identity-leading">
+                        <div className="identity-icon-box"><Mail size={18} /></div>
                       </div>
-                      <div className="card-actions">
+                      <div className="identity-info">
+                        <div className="identity-label">
+                          {email.email}
+                          {email.isPrimary && <CheckCircle size={14} className="success-icon" />}
+                        </div>
+                        <div className="identity-sub">{email.emailName} • {email.active ? 'Active' : 'Inactive'}</div>
+                      </div>
+                      <div className="identity-trailing">
                         {email.isPrimary ? (
-                          <span className="status-pill primary">Primary</span>
+                          <span className="primary-pill-mini">Primary</span>
                         ) : (
                           <button 
-                            className="action-btn secondary" 
+                            className="row-action-btn" 
                             onClick={() => handleMakePrimary(email.id)}
                             disabled={loading}
                           >
@@ -1152,38 +1233,83 @@ function App() {
                       </div>
                     </div>
                   ))}
-                  <button className="add-card-btn">
-                    <Plus size={20} />
+                  {/* <button className="add-identity-row">
+                    <Plus size={18} />
                     <span>Add New Mailbox</span>
-                  </button>
+                  </button> */}
                 </div>
 
-                <div className="accounts-dashboard-section" style={{marginTop: '48px'}}>
+                <div className="accounts-dashboard-section" style={{marginTop: '40px'}}>
                   <header className="section-header">
                     <h2>Logged-in Identities</h2>
                     <p>Quickly switch between your active B2Auth accounts.</p>
                   </header>
-                  <div className="card-list">
-                    {accounts.map(account => (
-                      <div 
-                        key={account.userData.email} 
-                        className={`glass-card account-card-horizontal ${account.token === accessToken ? 'active-identity' : ''}`}
-                        onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
-                      >
-                        <div className="account-avatar-small">
-                          {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
-                        </div>
-                        <div className="card-info">
-                          <div className="card-main-text">
-                            {account.userData.firstName} {account.userData.lastName}
-                            {account.token === accessToken && <span className="current-badge">Current</span>}
+
+                  {/* Business Accounts Section */}
+                  {accounts.some(a => a.userData.accountType === 'BUSINESS') && (
+                    <div className="identity-group">
+                      <h3 className="identity-group-title"><Briefcase size={14} /> Business Accounts</h3>
+                      <div className="identity-container animate-scale-in">
+                        {accounts.filter(a => a.userData.accountType === 'BUSINESS').map(account => (
+                          <div 
+                            key={account.userData.email} 
+                            className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
+                            onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
+                          >
+                            <div className="identity-leading">
+                              <div className="identity-avatar-mini business">
+                                {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                              </div>
+                            </div>
+                            <div className="identity-info">
+                              <div className="identity-label">
+                                {account.userData.firstName} {account.userData.lastName}
+                                {account.token === accessToken && <span className="current-badge-mini">Current</span>}
+                                {account.userData.isPrimary && <span className="primary-badge-mini">Primary</span>}
+                              </div>
+                              <div className="identity-sub">{account.userData.email}</div>
+                            </div>
+                            <div className="identity-trailing">
+                              {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
+                            </div>
                           </div>
-                          <div className="card-sub-text">{account.userData.email}</div>
-                        </div>
-                        {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Personal Accounts Section (PUBLIC or CHILD) */}
+                  {accounts.some(a => a.userData.accountType !== 'BUSINESS') && (
+                    <div className="identity-group" style={{marginTop: '24px'}}>
+                      <h3 className="identity-group-title"><User size={14} /> Personal Accounts</h3>
+                      <div className="identity-container animate-scale-in">
+                        {accounts.filter(a => a.userData.accountType !== 'BUSINESS').map(account => (
+                          <div 
+                            key={account.userData.email} 
+                            className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
+                            onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
+                          >
+                            <div className="identity-leading">
+                              <div className="identity-avatar-mini">
+                                {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                              </div>
+                            </div>
+                            <div className="identity-info">
+                              <div className="identity-label">
+                                {account.userData.firstName} {account.userData.lastName}
+                                {account.token === accessToken && <span className="current-badge-mini">Current</span>}
+                                {account.userData.isPrimary && <span className="primary-badge-mini">Primary</span>}
+                              </div>
+                              <div className="identity-sub">{account.userData.email}</div>
+                            </div>
+                            <div className="identity-trailing">
+                              {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
