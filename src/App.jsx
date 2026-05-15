@@ -631,6 +631,25 @@ function App() {
     }
   };
 
+  const handleEnable2FA = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_BASE}/users/2fa/enable`, {}, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.data.success) {
+        setProfileData(prev => prev ? ({ ...prev, twoFactorEnabled: true }) : prev);
+        setSettingsData(prev => prev ? ({ ...prev, twoFactorEnabled: true }) : prev);
+        alert("2-Step Verification has been enabled.");
+      }
+    } catch (err) {
+      // If no setup found, redirect to account manager
+      window.open(`https://account.beta-softnet.com/security?token=${accessToken}`, '_blank');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDisable2FA = async () => {
     if (!window.confirm("Are you sure you want to disable 2-Step Verification? This will make your account less secure.")) {
       return;
@@ -643,6 +662,7 @@ function App() {
       if (res.data.success) {
         setProfileData(prev => prev ? ({ ...prev, twoFactorEnabled: false }) : prev);
         setSettingsData(prev => prev ? ({ ...prev, twoFactorEnabled: false }) : prev);
+        fetchAuthenticatorAccounts(accessToken);
         alert("2-Step Verification has been disabled.");
       }
     } catch (err) {
@@ -1628,7 +1648,7 @@ function App() {
                            ) : (
                              <button 
                                className="row-action-btn"
-                               onClick={() => window.open(`https://account.beta-softnet.com/security?token=${accessToken}`, '_blank')}
+                               onClick={handleEnable2FA}
                              >
                                Enable
                              </button>
