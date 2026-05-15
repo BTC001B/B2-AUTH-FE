@@ -640,6 +640,7 @@ function App() {
       if (res.data.success) {
         setProfileData(prev => prev ? ({ ...prev, twoFactorEnabled: true }) : prev);
         setSettingsData(prev => prev ? ({ ...prev, twoFactorEnabled: true }) : prev);
+        fetchAuthenticatorAccounts(accessToken);
         alert("2-Step Verification has been enabled.");
       }
     } catch (err) {
