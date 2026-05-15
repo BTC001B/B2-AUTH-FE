@@ -99,6 +99,8 @@ function App() {
   const [showAddAuthModal, setShowAddAuthModal] = useState(false);
   const [addAuthMode, setAddAuthMode] = useState('scan'); // 'scan' or 'manual'
   const [manualAuthData, setManualAuthData] = useState({ name: '', secret: '' });
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
 
   const handleLogout = () => {
     localStorage.removeItem('bnx_accessToken');
@@ -368,28 +370,35 @@ function App() {
   useEffect(() => {
     let scanner = null;
     if (showAddAuthModal && addAuthMode === 'scan') {
-      scanner = new Html5QrcodeScanner("reader", { 
-        fps: 10, 
-        qrbox: { width: 250, height: 250 } 
-      }, false);
+      // Small timeout to ensure DOM element #reader is mounted
+      const timer = setTimeout(() => {
+        const readerElement = document.getElementById("reader");
+        if (!readerElement) return;
 
-      const onScanSuccess = (decodedText) => {
-        scanner.clear();
-        handleProcessQR(decodedText);
+        scanner = new Html5QrcodeScanner("reader", { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 } 
+        }, false);
+
+        const onScanSuccess = (decodedText) => {
+          scanner.clear();
+          handleProcessQR(decodedText);
+        };
+
+        const onScanError = (err) => {
+          // Ignore errors
+        };
+
+        scanner.render(onScanSuccess, onScanError);
+      }, 300);
+
+      return () => {
+        clearTimeout(timer);
+        if (scanner) {
+          scanner.clear().catch(e => console.error("Scanner clear failed", e));
+        }
       };
-
-      const onScanError = (err) => {
-        // Ignore errors
-      };
-
-      scanner.render(onScanSuccess, onScanError);
     }
-
-    return () => {
-      if (scanner) {
-        scanner.clear().catch(e => console.error("Scanner clear failed", e));
-      }
-    };
   }, [showAddAuthModal, addAuthMode]);
 
   const handleProcessQR = (text) => {
@@ -425,6 +434,51 @@ function App() {
       }
     } catch (err) {
       setError("Failed to add account");
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await axios.post(`${API_BASE}/auth/change-password`, {
+        oldPassword: passwordForm.oldPassword,
+        newPassword: passwordForm.newPassword
+      }, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      setShowChangePasswordModal(false);
+      setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      alert("Password changed successfully");
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to change password');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotInModal = () => {
+    setShowChangePasswordModal(false);
+    const email = profileData?.email || formData.identifier;
+    setFormData(prev => ({ ...prev, identifier: email }));
+    handleForgotPasswordClickWithEmail(email);
+  };
+
+  const handleForgotPasswordClickWithEmail = async (email) => {
+    setLoading(true);
+    setError('');
+    const normalizedEmail = normalizeIdentifier(email);
+    try {
+      const res = await axios.get(`${API_BASE}/auth/forgot-password/options?identifier=${normalizedEmail}`);
+      if (res.data.success) {
+        setRecoveryOptions(res.data.data);
+        setView('forgot-password-options');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'User not found or no recovery options set');
+      setView('forgot-password-identifier');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1297,6 +1351,8 @@ function App() {
                     </div>
                   )}
                 </div>
+
+
               </motion.div>
             )}
 
@@ -1327,7 +1383,7 @@ function App() {
                           <div className="identity-sub">A secure password helps protect your B2Auth Account</div>
                         </div>
                         <div className="identity-trailing">
-                          <button className="row-action-btn">Change</button>
+                          <button className="row-action-btn" onClick={() => setShowChangePasswordModal(true)}>Change</button>
                         </div>
                       </div>
                       <div className="identity-row">
@@ -1383,7 +1439,7 @@ function App() {
                   {/* Your Devices Section */}
                   <div className="security-section">
                     <h3 className="identity-group-title"><Monitor size={14} /> Your devices</h3>
-                    <div className="identity-container">
+                    <div className="identity-container scrollable-identity-container">
                       {sessions.map(session => {
                         const device = parseUserAgent(session.userAgent);
                         return (
@@ -1415,7 +1471,7 @@ function App() {
                   {/* Connected Apps Section */}
                   <div className="security-section">
                     <h3 className="identity-group-title"><Globe size={14} /> Third-party apps with account access</h3>
-                    <div className="identity-container">
+                    <div className="identity-container scrollable-identity-container">
                       {externalSessions.length > 0 ? externalSessions.map(session => (
                         <div key={session.id} className="identity-row">
                           <div className="identity-leading">
@@ -1435,6 +1491,127 @@ function App() {
                     </div>
                   </div>
                 </div>
+
+                {/* Add Authenticator Account Modal */}
+                {showAddAuthModal && (
+                  <div className="auth-modal-overlay">
+                    <div className="auth-modal-content animate-scale-in">
+                      <div className="auth-modal-header">
+                        <h3>Add New Account</h3>
+                        <button className="auth-close-btn" onClick={() => setShowAddAuthModal(false)}>
+                          <X size={20} />
+                        </button>
+                      </div>
+
+                      <div className="auth-tab-switcher">
+                        <button 
+                          className={addAuthMode === "scan" ? "active" : ""} 
+                          onClick={() => setAddAuthMode("scan")}
+                        >
+                          Scan QR Code
+                        </button>
+                        <button 
+                          className={addAuthMode === "manual" ? "active" : ""} 
+                          onClick={() => setAddAuthMode("manual")}
+                        >
+                          Manual Entry
+                        </button>
+                      </div>
+
+                      <div className="auth-modal-body">
+                        {addAuthMode === "scan" ? (
+                          <div className="qr-scanner-container">
+                            <div id="reader" style={{width: "100%"}}></div>
+                            <p className="scanner-hint">Point your camera at the QR code</p>
+                          </div>
+                        ) : (
+                          <div className="manual-entry-form">
+                            <div className="auth-input-group">
+                              <label>Account Name</label>
+                              <input 
+                                type="text" 
+                                placeholder="e.g. GitHub: vishal" 
+                                value={manualAuthData.name}
+                                onChange={e => setManualAuthData({...manualAuthData, name: e.target.value})}
+                              />
+                            </div>
+                            <div className="auth-input-group">
+                              <label>Secret Key</label>
+                              <input 
+                                type="text" 
+                                placeholder="Enter 2FA secret" 
+                                value={manualAuthData.secret}
+                                onChange={e => setManualAuthData({...manualAuthData, secret: e.target.value})}
+                              />
+                            </div>
+                            <button 
+                              className="action-btn primary-solid full-width"
+                              onClick={() => handleAddAuthenticatorAccount(manualAuthData.name, manualAuthData.secret)}
+                              disabled={!manualAuthData.name || !manualAuthData.secret}
+                            >
+                              Save Account
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Change Password Modal */}
+                {showChangePasswordModal && (
+                  <div className="auth-modal-overlay">
+                    <div className="auth-modal-content animate-scale-in" style={{ maxWidth: "400px" }}>
+                      <div className="auth-modal-header">
+                        <h3>Change Password</h3>
+                        <button className="auth-close-btn" onClick={() => setShowChangePasswordModal(false)}>
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <div className="auth-modal-body">
+                        <div className="auth-input-group">
+                          <label>Current Password</label>
+                          <input 
+                            type="password" 
+                            placeholder="Enter current password"
+                            value={passwordForm.oldPassword}
+                            onChange={e => setPasswordForm({...passwordForm, oldPassword: e.target.value})}
+                          />
+                          <div className="input-helper-link">
+                            <button type="button" onClick={handleForgotInModal} className="text-link-btn-small">Forgot password?</button>
+                          </div>
+                        </div>
+                        <div className="auth-input-group">
+                          <label>New Password</label>
+                          <input 
+                            type="password" 
+                            placeholder="Enter new password"
+                            value={passwordForm.newPassword}
+                            onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                          />
+                        </div>
+                        <div className="auth-input-group">
+                          <label style={{marginTop:'10px'}}>Confirm New Password</label>
+                          <input
+                            style={{marginBottom:'10px'}} 
+                            type="password" 
+                            placeholder="Confirm new password"
+                            value={passwordForm.confirmPassword}
+                            onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                          />
+                        </div>
+                        {error && <div className="error-message-inline" style={{ marginBottom: "16px" }}>{error}</div>}
+                        <button 
+                          className="action-btn primary-solid full-width"
+                          onClick={handleChangePassword}
+                          disabled={loading || !passwordForm.oldPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword}
+                        >
+                          {loading ? <RefreshCw className="spin" size={16} /> : "Update Password"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -1881,30 +2058,72 @@ function App() {
           )}
 
           {view === 'forgot-password-options' && (
-            <div className="auth-step">
-              <p className="recovery-helper">Choose where you want to receive the verification code:</p>
-              {recoveryOptions?.recoveryEmail && (
-                <div className="recovery-option-premium" onClick={() => handleSendOtp('EMAIL')}>
-                  <Mail size={20} />
-                  <span>Email to {recoveryOptions.recoveryEmail}</span>
+            <div className="auth-step-merged">
+              <div className="login-grid">
+                <div className="input-field-group">
+                  <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>Account Recovery</label>
+                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
+                    Select a recovery method to receive a verification code.
+                  </p>
+                  
+                  <div className="recovery-methods-list">
+                    {recoveryOptions?.recoveryEmail && (
+                      <div className="recovery-option-premium" onClick={() => handleSendOtp('EMAIL')}>
+                        <div className="option-icon"><Mail size={20} /></div>
+                        <div className="option-info">
+                          <span className="option-label">Email</span>
+                          <span className="option-value">{recoveryOptions.recoveryEmail}</span>
+                        </div>
+                        <ChevronRight size={18} className="option-arrow" />
+                      </div>
+                    )}
+                    {recoveryOptions?.phoneNumber && (
+                      <div className="recovery-option-premium" onClick={() => handleSendOtp('PHONE')}>
+                        <div className="option-icon"><Smartphone size={20} /></div>
+                        <div className="option-info">
+                          <span className="option-label">Phone</span>
+                          <span className="option-value">{recoveryOptions.phoneNumber}</span>
+                        </div>
+                        <ChevronRight size={18} className="option-arrow" />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
-              {recoveryOptions?.phoneNumber && (
-                <div className="recovery-option-premium" onClick={() => handleSendOtp('PHONE')}>
-                  <Smartphone size={20} />
-                  <span>SMS to {recoveryOptions.phoneNumber}</span>
-                </div>
-              )}
-              <div className="auth-actions">
-                <button className="text-btn" onClick={() => setView('forgot-password-identifier')}>Back</button>
+              </div>
+              <div className="auth-footer-merged" style={{ marginTop: '32px', borderTop: 'none', justifyContent: 'center' }}>
+                <button className="text-link-btn" onClick={() => setView('forgot-password-identifier')}>Try another way</button>
               </div>
             </div>
           )}
 
           {view === 'forgot-password-otp' && (
-            <form onSubmit={handleVerifyOtp} className="auth-step">
-              <div className="input-group"><input type="text" name="otp" value={formData.otp} onChange={handleInputChange} required placeholder=" " /><label>Verification Code</label></div>
-              <div className="auth-actions"><button type="submit" className="primary-btn">Verify</button></div>
+            <form onSubmit={handleVerifyOtp} className="auth-step-merged">
+              <div className="login-grid">
+                <div className="input-field-group">
+                  <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>Enter Code</label>
+                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
+                    A verification code was sent to your recovery method. Enter it below to continue.
+                  </p>
+                  <div className="login-input-wrapper">
+                    <input 
+                      type="text" 
+                      name="otp"
+                      placeholder="Enter 6-digit code"
+                      value={formData.otp}
+                      onChange={handleInputChange}
+                      required
+                      autoFocus
+                      className="otp-input-elite"
+                      maxLength="6"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="button-group-right" style={{ marginTop: '32px' }}>
+                <button type="submit" className="primary-btn" disabled={loading}>
+                  {loading ? 'Verifying...' : 'Next'}
+                </button>
+              </div>
             </form>
           )}
 

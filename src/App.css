@@ -400,33 +400,94 @@ body {
   display: none; /* User hid it, we keep it hidden or refined */
 }
 
+.recovery-methods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 .recovery-option-premium {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 20px;
-  background: var(--bg-input);
-  border: 1.5px solid var(--border);
-  border-radius: 16px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
   cursor: pointer;
-  margin-bottom: 12px;
-  transition: all 0.2s ease;
-  color: var(--text-main);
-  font-weight: 500;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 .recovery-option-premium:hover {
+  background: white;
   border-color: var(--primary);
-  background: var(--primary-soft);
-  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
 }
 
-.recovery-option-premium svg {
-  color: var(--secondary);
+.option-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  flex-shrink: 0;
 }
 
-.recovery-option-premium:hover svg {
+.option-info {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.option-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.option-value {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.option-arrow {
+  color: var(--border);
+  transition: transform 0.3s ease;
+}
+
+.recovery-option-premium:hover .option-arrow {
   color: var(--primary);
+  transform: translateX(4px);
+}
+
+.input-helper-link {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.text-link-btn-small {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: opacity 0.2s ease;
+}
+
+.text-link-btn-small:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 /* Original styles below for other views */
@@ -2359,6 +2420,7 @@ body {
 .security-section {
   display: flex;
   flex-direction: column;
+  
 }
 
 .security-section .identity-group-title {
@@ -2459,4 +2521,28 @@ body {
 .icon-action-btn:hover {
   background: #f1f3f4;
   color: #d93025;
+}
+
+.scrollable-identity-container {
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-width: none;
+}
+
+.scrollable-identity-container::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrollable-identity-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollable-identity-container::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 10px;
+}
+
+.scrollable-identity-container::-webkit-scrollbar-thumb:hover {
+  background: var(--secondary);
 }
