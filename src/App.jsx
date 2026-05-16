@@ -249,6 +249,7 @@ function App() {
   const [accounts, setAccounts] = useState(() => JSON.parse(localStorage.getItem('bnx_accounts') || '[]'));
   const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions, settings, activity
+  const [show2faRecovery, setShow2faRecovery] = useState(false);
   const [language, setLanguage] = useState('English (US)');
   const [recoveryInfo, setRecoveryInfo] = useState({ recoveryEmail: '', phoneNumber: '' });
   const [isEditingRecovery, setIsEditingRecovery] = useState(false);
@@ -1115,6 +1116,68 @@ function App() {
       if (res.data.success) setView('forgot-password-reset');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSend2faRecoveryOtp = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await axios.post(`${API_BASE}/auth/login/2fa/send-otp`, { tempToken });
+      alert("A recovery code has been sent to your email.");
+      setFormData({ ...formData, otp: '' });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send recovery code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerify2faRecoveryOtp = async (e) => {
+    e.preventDefault();
+    if (!formData.otp) {
+      setError('Please enter the code from your email');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post(`${API_BASE}/auth/login/2fa/verify-otp`, { 
+        tempToken, 
+        otp: formData.otp 
+      });
+      if (res.data.success) {
+        saveAccount(res.data.data.accessToken, res.data.data);
+        setAccessToken(res.data.data.accessToken);
+        
+        // OAuth Redirection Fix
+        if (clientId && redirectUri) {
+          try {
+            const authRes = await axios.post(
+              `${API_BASE}/oauth/authorize`,
+              { clientId, redirectUri, state },
+              { headers: { Authorization: `Bearer ${res.data.data.accessToken}` } }
+            );
+            if (authRes.data.success) {
+              const code = authRes.data.data.code;
+              window.location.href = `${redirectUri}?code=${code}&state=${state}`;
+              return;
+            }
+          } catch (oauthErr) {
+            console.error("OAuth Authorization failed after 2FA recovery", oauthErr);
+          }
+        }
+        
+        fetchEmails(res.data.data.accessToken);
+        fetchSessions(res.data.data.accessToken);
+        fetchExternalSessions(res.data.data.accessToken);
+        fetchRecoveryInfo(res.data.data.accessToken);
+        setView('dashboard');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid recovery code');
     } finally {
       setLoading(false);
     }
@@ -2066,45 +2129,118 @@ function App() {
           )}
 
           {view === 'login-2fa' && (
-            <form onSubmit={handleVerifyLogin2fa} className="auth-step-merged">
-              <div className="login-grid">
-                <div className="input-field-group">
-                  <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>2-Step Verification</label>
-                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
-                    To help keep your account safe, B2Auth wants to make sure it's really you. 
-                    Enter the 6-digit code from your <b>Authenticator App</b>.
-                  </p>
-                  <div className="login-input-wrapper">
-                    <input 
-                      type="text" 
-                      name="otp"
-                      placeholder="Enter code"
-                      value={formData.otp}
-                      onChange={handleInputChange}
-                      required
-                      autoFocus
-                      className="otp-input-elite"
-                      maxLength="6"
-                      style={{ 
-                        width: '100%', 
-                        padding: '16px', 
-                        borderRadius: '12px', 
-                        border: '2px solid #e2e8f0', 
-                        fontSize: '24px', 
-                        fontWeight: '700', 
-                        textAlign: 'center',
-                        letterSpacing: '4px'
-                      }}
-                    />
+            <div className="auth-step-merged">
+              {!show2faRecovery ? (
+                <form onSubmit={handleVerifyLogin2fa}>
+                  <div className="login-grid">
+                    <div className="input-field-group">
+                      <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>2-Step Verification</label>
+                      <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
+                        To help keep your account safe, B2Auth wants to make sure it's really you. 
+                        Enter the 6-digit code from your <b>Authenticator App</b>.
+                      </p>
+                      <div className="login-input-wrapper">
+                        <input 
+                          type="text" 
+                          name="otp"
+                          placeholder="Enter code"
+                          value={formData.otp}
+                          onChange={handleInputChange}
+                          required
+                          autoFocus
+                          className="otp-input-elite"
+                          maxLength="6"
+                          style={{ 
+                            width: '100%', 
+                            padding: '16px', 
+                            borderRadius: '12px', 
+                            border: '2px solid #e2e8f0', 
+                            fontSize: '24px', 
+                            fontWeight: '700', 
+                            textAlign: 'center',
+                            letterSpacing: '4px'
+                          }}
+                        />
+                      </div>
+                      <div style={{ marginTop: '16px' }}>
+                        <button 
+                          type="button"
+                          onClick={() => setShow2faRecovery(true)}
+                          style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+                        >
+                          Don't have your device? Try another way
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="button-group-right" style={{ marginTop: '32px' }}>
-                <button type="submit" className="primary-btn" disabled={loading}>
-                  {loading ? 'Verifying...' : 'Next'}
-                </button>
-              </div>
-            </form>
+                  <div className="button-group-right" style={{ marginTop: '32px' }}>
+                    <button type="submit" className="primary-btn" disabled={loading}>
+                      {loading ? 'Verifying...' : 'Next'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleVerify2faRecoveryOtp}>
+                  <div className="login-grid">
+                    <div className="input-field-group">
+                      <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>Account Recovery</label>
+                      <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
+                        We will send a 6-digit recovery code to your registered secondary email address.
+                      </p>
+                      
+                      <div style={{ marginBottom: '20px' }}>
+                        <button 
+                          type="button" 
+                          className="secondary-btn" 
+                          style={{ width: '100%' }}
+                          onClick={handleSend2faRecoveryOtp}
+                          disabled={loading}
+                        >
+                          Send Recovery Code to Email
+                        </button>
+                      </div>
+
+                      <div className="login-input-wrapper">
+                        <input 
+                          type="text" 
+                          name="otp"
+                          placeholder="Enter 6-digit code"
+                          value={formData.otp}
+                          onChange={handleInputChange}
+                          required
+                          className="otp-input-elite"
+                          maxLength="6"
+                          style={{ 
+                            width: '100%', 
+                            padding: '16px', 
+                            borderRadius: '12px', 
+                            border: '2px solid #e2e8f0', 
+                            fontSize: '24px', 
+                            fontWeight: '700', 
+                            textAlign: 'center',
+                            letterSpacing: '4px'
+                          }}
+                        />
+                      </div>
+                      <div style={{ marginTop: '16px' }}>
+                        <button 
+                          type="button"
+                          onClick={() => setShow2faRecovery(false)}
+                          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+                        >
+                          ← Back to Authenticator
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="button-group-right" style={{ marginTop: '32px' }}>
+                    <button type="submit" className="primary-btn" disabled={loading}>
+                      {loading ? 'Verifying...' : 'Verify and Login'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
 
           {(view === 'login-email' || view === 'login-password') && (
