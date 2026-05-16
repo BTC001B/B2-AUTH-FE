@@ -250,6 +250,7 @@ function App() {
   const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions, settings, activity
   const [show2faRecovery, setShow2faRecovery] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [language, setLanguage] = useState('English (US)');
   const [recoveryInfo, setRecoveryInfo] = useState({ recoveryEmail: '', phoneNumber: '' });
   const [isEditingRecovery, setIsEditingRecovery] = useState(false);
@@ -1124,10 +1125,13 @@ function App() {
   const handleSend2faRecoveryOtp = async () => {
     setLoading(true);
     setError('');
+    setSuccessMessage('');
     try {
       await axios.post(`${API_BASE}/auth/login/2fa/send-otp`, { tempToken });
-      alert("A recovery code has been sent to your email.");
+      setSuccessMessage("Recovery code sent to your email.");
       setFormData({ ...formData, otp: '' });
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccessMessage(''), 5000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send recovery code');
     } finally {
@@ -2132,7 +2136,7 @@ function App() {
             <div className="auth-step-merged">
               {!show2faRecovery ? (
                 <form onSubmit={handleVerifyLogin2fa}>
-                  <div className="login-grid">
+                  <div className="login-grid-2f">
                     <div className="input-field-group">
                       <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>2-Step Verification</label>
                       <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
@@ -2166,7 +2170,7 @@ function App() {
                         <button 
                           type="button"
                           onClick={() => setShow2faRecovery(true)}
-                          style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
+                          style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', fontSize: '13px', fontWeight: '600', display: 'block', margin: '0 auto' }}
                         >
                           Don't have your device? Try another way
                         </button>
@@ -2181,22 +2185,28 @@ function App() {
                 </form>
               ) : (
                 <form onSubmit={handleVerify2faRecoveryOtp}>
-                  <div className="login-grid">
+                  <div className="login-grid-2f">
                     <div className="input-field-group">
                       <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>Account Recovery</label>
                       <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
                         We will send a 6-digit recovery code to your registered secondary email address.
                       </p>
                       
+                      {successMessage && (
+                        <div className="success-banner-elite" style={{ marginBottom: '16px' }}>
+                          <CheckCircle size={18} />
+                          <span>{successMessage}</span>
+                        </div>
+                      )}
+
                       <div style={{ marginBottom: '20px' }}>
                         <button 
                           type="button" 
-                          className="secondary-btn" 
-                          style={{ width: '100%' }}
+                          className="recovery-send-btn" 
                           onClick={handleSend2faRecoveryOtp}
                           disabled={loading}
                         >
-                          Send Recovery Code to Email
+                          {loading ? <RefreshCw className="spin" size={18} /> : 'Send Recovery Code to Email'}
                         </button>
                       </div>
 
