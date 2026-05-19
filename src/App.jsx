@@ -739,8 +739,20 @@ function App() {
   };
 
   const handleSelectAccount = async (account) => {
-    setLoading(true);
     const { token, userData } = account;
+    
+    // Check if the application requires a business or child account
+    if (registrationMode === 'business' && userData.accountType !== 'BUSINESS') {
+      setError('This application requires a Business account.');
+      return;
+    }
+
+    if (registrationMode === 'child' && userData.accountType !== 'CHILD') {
+      setError('This application is restricted to Child accounts.');
+      return;
+    }
+
+    setLoading(true);
     
     // Set as active session
     localStorage.setItem('bnx_accessToken', token);
