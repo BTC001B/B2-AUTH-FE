@@ -2804,3 +2804,31 @@ body {
 .disable-btn:hover {
   text-decoration: underline;
 }
+
+/* Side-by-side input grid layouts */
+.name-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.business-signup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.business-signup-grid .input-group {
+  margin-bottom: 0;
+}
+
+.business-signup-grid .requirements-group {
+  display: flex;
+  align-items: center;
+  padding-left: 4px;
+}
+
+.business-signup-grid .requirements-group .password-hint {
+  margin: 0;
+}

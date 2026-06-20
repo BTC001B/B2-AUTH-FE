@@ -2389,19 +2389,21 @@ function App() {
 
           {view === 'signup-business' && (
             <form onSubmit={(e) => handleRegisterProfile(e, 'BUSINESS')} className="auth-step">
-              <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business name</label></div>
-              <div className="input-group"><input type="text" name="businessType" value={formData.businessType} onChange={handleInputChange} required placeholder=" " /><label>Business Type</label></div>
-              <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} placeholder=" " /><label>Reg. Number</label></div>
-              <div className="name-grid">
+              <div className="business-signup-grid">
+                <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business name</label></div>
+                <div className="input-group"><input type="text" name="businessType" value={formData.businessType} onChange={handleInputChange} required placeholder=" " /><label>Business Type</label></div>
+                <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} placeholder=" " /><label>Reg. Number</label></div>
+                <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username (Admin)</label></div>
                 <div className="input-group"><input type="text" name="ownerFirstName" value={formData.ownerFirstName} onChange={handleInputChange} required placeholder=" " /><label>Owner First name</label></div>
                 <div className="input-group"><input type="text" name="ownerLastName" value={formData.ownerLastName} onChange={handleInputChange} required placeholder=" " /><label>Owner Last name</label></div>
+                <div className="input-group">
+                  <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
+                  <label>Password</label>
+                </div>
+                <div className="requirements-group">
+                  <PasswordRequirements password={formData.password} />
+                </div>
               </div>
-              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username (Admin)</label></div>
-              <div className="input-group">
-                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
-                <label>Password</label>
-              </div>
-              <PasswordRequirements password={formData.password} />
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>Next</button>
