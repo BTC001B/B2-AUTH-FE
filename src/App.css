@@ -2831,3 +2831,71 @@ body {
   margin-top: -4px;
   margin-bottom: 0;
 }
+
+/* Relogin View Styles */
+.relogin-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.account-relogin-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  text-align: left;
+}
+
+.avatar-circle-relogin {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.relogin-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.relogin-email {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.switch-account-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  transition: opacity 0.2s;
+}
+
+.switch-account-btn:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.relogin-password-group {
+  display: flex;
+  flex-direction: column;
+}

@@ -232,7 +232,7 @@ function App() {
 
   // Form Data
   const [formData, setFormData] = useState({
-    identifier: '', password: '', username: '', firstName: '', lastName: '',
+    identifier: localStorage.getItem('bnx_last_identifier') || '', password: '', username: '', firstName: '', lastName: '',
     emailName: '', otp: '', newPassword: '', confirmPassword: '',
     businessName: '', businessType: '', registrationNumber: '',
     ownerFirstName: '', ownerLastName: '', domain: '', dob: '',
@@ -248,6 +248,7 @@ function App() {
   const [externalSessions, setExternalSessions] = useState([]);
   const [accounts, setAccounts] = useState(() => JSON.parse(localStorage.getItem('bnx_accounts') || '[]'));
   const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
+  const [useSavedAccount, setUseSavedAccount] = useState(!!localStorage.getItem('bnx_last_identifier'));
   const [dashboardTab, setDashboardTab] = useState('emails'); // emails, sessions, settings, activity
   const [show2faRecovery, setShow2faRecovery] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -302,11 +303,12 @@ function App() {
     setSessions([]);
     setExternalSessions([]);
     setFormData({
-      identifier: '', password: '', username: '', firstName: '', lastName: '',
+      identifier: localStorage.getItem('bnx_last_identifier') || '', password: '', username: '', firstName: '', lastName: '',
       emailName: '', otp: '', newPassword: '', confirmPassword: '',
       businessName: '', businessType: '', registrationNumber: '',
       ownerFirstName: '', ownerLastName: '', domain: '', dob: '',
     });
+    setUseSavedAccount(!!localStorage.getItem('bnx_last_identifier'));
     setView('login-email');
   };
 
@@ -741,6 +743,10 @@ function App() {
   const handleSelectAccount = async (account) => {
     const { token, userData } = account;
     
+    localStorage.setItem('bnx_last_identifier', userData.email);
+    setFormData(prev => ({ ...prev, identifier: userData.email, password: '' }));
+    setUseSavedAccount(true);
+
     // Check if the application requires a business or child account
     if (registrationMode === 'business' && userData.accountType !== 'BUSINESS') {
       setError('This application requires a Business account.');
@@ -842,6 +848,7 @@ function App() {
     setLoading(true);
     setError('');
 
+    localStorage.setItem('bnx_last_identifier', formData.identifier);
     const normalizedEmail = normalizeIdentifier(formData.identifier);
 
     try {
@@ -1239,8 +1246,14 @@ function App() {
     localStorage.removeItem('bnx_accessToken');
     localStorage.removeItem('bnx_userData');
     localStorage.removeItem('bnx_accounts');
+    localStorage.removeItem('bnx_last_identifier');
     setAccounts([]);
-    window.location.reload();
+    setAccessToken('');
+    setUserEmails([]);
+    setSessions([]);
+    setExternalSessions([]);
+    setUseSavedAccount(false);
+    setView('login-email');
   };
 
   const fetchFullProfile = async (token) => {
@@ -1277,6 +1290,7 @@ function App() {
   const handleAddAccount = () => {
     setShowAccountSwitcher(false);
     setView('login-email');
+    setUseSavedAccount(false);
     setFormData(prev => ({ ...prev, identifier: '', password: '' }));
   };
 
@@ -2267,33 +2281,64 @@ function App() {
 
           {(view === 'login-email' || view === 'login-password') && (
             <form onSubmit={handleLogin} className="auth-step-merged">
-              <div className="login-grid">
-                <div className="input-field-group">
-                  <label>Email:</label>
-                  <div className={`login-input-wrapper ${!formData.identifier.includes('@') ? 'has-domain-hint' : ''}`}>
+              {useSavedAccount && formData.identifier ? (
+                <div className="relogin-container">
+                  <div className="account-relogin-header">
+                    <div className="avatar-circle-relogin">
+                      {formData.identifier.split('@')[0]?.[0]?.toUpperCase() || 'U'}
+                    </div>
+                    <div className="relogin-info">
+                      <span className="relogin-email">{formData.identifier.includes('@') ? formData.identifier : `${formData.identifier}@bnxmail.com`}</span>
+                      <button type="button" className="switch-account-btn" onClick={() => {
+                        setUseSavedAccount(false);
+                        setFormData(prev => ({ ...prev, identifier: '', password: '' }));
+                      }}>
+                        Use another account
+                      </button>
+                    </div>
+                  </div>
+                  <div className="input-field-group relogin-password-group">
+                    <label>Password:</label>
                     <input 
-                      type="text" 
-                      name="identifier" 
-                      value={formData.identifier} 
+                      type="password" 
+                      placeholder='Enter your password'
+                      name="password" 
+                      value={formData.password} 
                       onChange={handleInputChange} 
                       required 
-                      placeholder="Username"
+                      autoFocus
                     />
-                    {!formData.identifier.includes('@') && <span className="domain-hint">@bnxmail.com</span>}
                   </div>
                 </div>
-                <div className="input-field-group">
-                  <label>Password:</label>
-                  <input 
-                    type="password" 
-                    placeholder='Enter your password'
-                    name="password" 
-                    value={formData.password} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
+              ) : (
+                <div className="login-grid">
+                  <div className="input-field-group">
+                    <label>Email:</label>
+                    <div className={`login-input-wrapper ${!formData.identifier.includes('@') ? 'has-domain-hint' : ''}`}>
+                      <input 
+                        type="text" 
+                        name="identifier" 
+                        value={formData.identifier} 
+                        onChange={handleInputChange} 
+                        required 
+                        placeholder="Username"
+                      />
+                      {!formData.identifier.includes('@') && <span className="domain-hint">@bnxmail.com</span>}
+                    </div>
+                  </div>
+                  <div className="input-field-group">
+                    <label>Password:</label>
+                    <input 
+                      type="password" 
+                      placeholder='Enter your password'
+                      name="password" 
+                      value={formData.password} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
               
               <div className="forgot-password-link" onClick={handleForgotPasswordClick}>
                 Forgot Password?
