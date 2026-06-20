@@ -2823,12 +2823,11 @@ body {
   margin-bottom: 0;
 }
 
-.business-signup-grid .requirements-group {
-  display: flex;
-  align-items: center;
-  padding-left: 4px;
+.business-signup-grid .full-width {
+  grid-column: span 2;
 }
 
-.business-signup-grid .requirements-group .password-hint {
-  margin: 0;
+.business-signup-grid .full-width .password-hint {
+  margin-top: -4px;
+  margin-bottom: 0;
 }

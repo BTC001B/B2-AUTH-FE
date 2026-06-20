@@ -2396,11 +2396,11 @@ function App() {
                 <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username (Admin)</label></div>
                 <div className="input-group"><input type="text" name="ownerFirstName" value={formData.ownerFirstName} onChange={handleInputChange} required placeholder=" " /><label>Owner First name</label></div>
                 <div className="input-group"><input type="text" name="ownerLastName" value={formData.ownerLastName} onChange={handleInputChange} required placeholder=" " /><label>Owner Last name</label></div>
-                <div className="input-group">
+                <div className="input-group full-width">
                   <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
                   <label>Password</label>
                 </div>
-                <div className="requirements-group">
+                <div className="full-width">
                   <PasswordRequirements password={formData.password} />
                 </div>
               </div>
