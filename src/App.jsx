@@ -2290,8 +2290,22 @@ function App() {
                     <div className="relogin-info">
                       <span className="relogin-email">{formData.identifier.includes('@') ? formData.identifier : `${formData.identifier}@bnxmail.com`}</span>
                       <button type="button" className="switch-account-btn" onClick={() => {
-                        setUseSavedAccount(false);
-                        setFormData(prev => ({ ...prev, identifier: '', password: '' }));
+                        const savedAccounts = JSON.parse(localStorage.getItem('bnx_accounts') || '[]');
+                        const otherAccounts = savedAccounts.filter(acc => acc.userData.email !== formData.identifier);
+                        
+                        if (otherAccounts.length === 1) {
+                          const otherAcc = otherAccounts[0];
+                          localStorage.setItem('bnx_last_identifier', otherAcc.userData.email);
+                          setFormData(prev => ({ ...prev, identifier: otherAcc.userData.email, password: '' }));
+                          setUseSavedAccount(true);
+                        } else if (otherAccounts.length > 1) {
+                          setUseSavedAccount(false);
+                          setView('account-selection');
+                        } else {
+                          setUseSavedAccount(false);
+                          setFormData(prev => ({ ...prev, identifier: '', password: '' }));
+                          setView('login-email');
+                        }
                       }}>
                         Use another account
                       </button>
