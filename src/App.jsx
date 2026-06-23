@@ -2140,7 +2140,8 @@ function App() {
                     localStorage.removeItem('bnx_accessToken');
                     localStorage.removeItem('bnx_userData');
                     setAccessToken(null);
-                    setFormData(prev => ({ ...prev, password: '' }));
+                    setFormData(prev => ({ ...prev, identifier: '', password: '' }));
+                    setUseSavedAccount(false);
                     setError('');
                     setView('login-email');
                   }}
@@ -2289,26 +2290,23 @@ function App() {
                     </div>
                     <div className="relogin-info">
                       <span className="relogin-email">{formData.identifier.includes('@') ? formData.identifier : `${formData.identifier}@bnxmail.com`}</span>
-                      <button type="button" className="switch-account-btn" onClick={() => {
-                        const savedAccounts = JSON.parse(localStorage.getItem('bnx_accounts') || '[]');
-                        const otherAccounts = savedAccounts.filter(acc => acc.userData.email !== formData.identifier);
-                        
-                        if (otherAccounts.length === 1) {
-                          const otherAcc = otherAccounts[0];
-                          localStorage.setItem('bnx_last_identifier', otherAcc.userData.email);
-                          setFormData(prev => ({ ...prev, identifier: otherAcc.userData.email, password: '' }));
-                          setUseSavedAccount(true);
-                        } else if (otherAccounts.length > 1) {
-                          setUseSavedAccount(false);
-                          setView('account-selection');
-                        } else {
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        <button type="button" className="switch-account-btn" onClick={() => {
                           setUseSavedAccount(false);
                           setFormData(prev => ({ ...prev, identifier: '', password: '' }));
                           setView('login-email');
-                        }
-                      }}>
-                        Use another account
-                      </button>
+                        }}>
+                          Use another account
+                        </button>
+                        {accounts.length > 1 && (
+                          <button type="button" className="switch-account-btn" onClick={() => {
+                            setUseSavedAccount(false);
+                            setView('account-selection');
+                          }}>
+                            Switch account
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="input-field-group relogin-password-group">
@@ -2357,6 +2355,27 @@ function App() {
               <div className="forgot-password-link" onClick={handleForgotPasswordClick}>
                 Forgot Password?
               </div>
+
+              {accounts.length > 0 && (
+                <div 
+                  className="forgot-password-link" 
+                  style={{ marginTop: '-20px', marginBottom: '32px' }} 
+                  onClick={() => {
+                    if (accounts.length === 1) {
+                      const acc = accounts[0];
+                      localStorage.setItem('bnx_last_identifier', acc.userData.email);
+                      setFormData(prev => ({ ...prev, identifier: acc.userData.email, password: '' }));
+                      setUseSavedAccount(true);
+                      setView('login-email');
+                    } else {
+                      setUseSavedAccount(false);
+                      setView('account-selection');
+                    }
+                  }}
+                >
+                  Sign in with a saved account
+                </div>
+              )}
 
               <div className="login-btn-container">
                 <button type="submit" className="merged-login-btn" disabled={loading}>
