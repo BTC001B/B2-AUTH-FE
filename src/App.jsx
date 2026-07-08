@@ -263,6 +263,7 @@ function App() {
   const [manualAuthData, setManualAuthData] = useState({ name: '', secret: '' });
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const [usernameSuggestions, setUsernameSuggestions] = useState([]);
   const topbarRightRef = useRef(null);
 
   const showLegalPage = (documentKey) => {
@@ -464,6 +465,32 @@ function App() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
   };
+
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (formData.firstName?.trim().length >= 2 && formData.lastName?.trim() && formData.dob) {
+        try {
+          const res = await axios.get(`${API_BASE}/auth/username-suggestions`, {
+            params: {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              dob: formData.dob
+            }
+          });
+          if (res.data.success) {
+            setUsernameSuggestions(res.data.data);
+          }
+        } catch (err) {
+          console.error("Failed to fetch username suggestions", err);
+        }
+      } else {
+        setUsernameSuggestions([]);
+      }
+    };
+
+    const timer = setTimeout(fetchSuggestions, 500);
+    return () => clearTimeout(timer);
+  }, [formData.firstName, formData.lastName, formData.dob]);
 
   // API CALLS
   const fetchEmails = async (token) => {
@@ -1033,6 +1060,7 @@ function App() {
       const regRes = await axios.post(`${API_BASE}/auth/register`, payload);
       if (regRes.data.success) {
         setTempToken(regRes.data.data.tempToken);
+        setFormData(prev => ({ ...prev, emailName: prev.username }));
         setView('signup-mail');
       }
     } catch (err) {
@@ -2452,6 +2480,26 @@ function App() {
                 <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First name</label></div>
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
+              <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
+              
+              {usernameSuggestions && usernameSuggestions.length > 0 && (
+                <div className="username-suggestions-container">
+                  <span className="suggestions-title">Suggested handles:</span>
+                  <div className="suggestions-list">
+                    {usernameSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        className="suggestion-chip"
+                        onClick={() => setFormData(prev => ({ ...prev, username: suggestion }))}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username</label></div>
               <div className="input-group">
                 <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
@@ -2496,6 +2544,25 @@ function App() {
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
               <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
+              
+              {usernameSuggestions && usernameSuggestions.length > 0 && (
+                <div className="username-suggestions-container">
+                  <span className="suggestions-title">Suggested handles:</span>
+                  <div className="suggestions-list">
+                    {usernameSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        className="suggestion-chip"
+                        onClick={() => setFormData(prev => ({ ...prev, username: suggestion }))}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username</label></div>
               <div className="input-group">
                 <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
