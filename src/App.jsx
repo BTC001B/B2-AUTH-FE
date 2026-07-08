@@ -1115,7 +1115,7 @@ function App() {
     const payload = {
       username: formData.username,
       password: formData.password,
-      mode: signupType,
+      mode: signupType === 'CHILD' ? 'PERSONAL' : signupType,
       firstName: formData.firstName,
       lastName: formData.lastName,
       dob: formData.dob
