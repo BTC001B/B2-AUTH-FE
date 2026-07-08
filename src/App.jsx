@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { 
-  LayoutDashboard, Mail, ShieldCheck, Settings, Activity, LogOut, 
-  Smartphone, Monitor, Tablet, CheckCircle, AlertCircle, 
+import {
+  LayoutDashboard, Mail, ShieldCheck, Settings, Activity, LogOut,
+  Smartphone, Monitor, Tablet, CheckCircle, AlertCircle,
   Trash2, Edit3, Save, Plus, ChevronRight, ChevronDown, User, Phone,
   Globe, Clock, MapPin, Briefcase,
   LockIcon,
@@ -50,7 +50,7 @@ const AuthenticatorCode = ({ secret }) => {
 
   return (
     <div className="auth-code-box">
-      <span className="auth-code">{code.slice(0,3)} {code.slice(3)}</span>
+      <span className="auth-code">{code.slice(0, 3)} {code.slice(3)}</span>
       <div className="auth-timer-container">
         <div className="auth-timer-bar" style={{ width: `${(timeLeft / 30) * 100}%`, backgroundColor: timeLeft < 5 ? '#ef4444' : '#4f46e5' }}></div>
       </div>
@@ -223,7 +223,7 @@ function App() {
   const [view, setView] = useState(getInitialView); // login-email, login-password, signup-selection, signup-profile, signup-child, signup-business, signup-mail, dashboard, verifying
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // OAuth Context
   const [clientId, setClientId] = useState('');
   const [redirectUri, setRedirectUri] = useState('');
@@ -236,6 +236,7 @@ function App() {
     emailName: '', otp: '', newPassword: '', confirmPassword: '',
     businessName: '', businessType: '', registrationNumber: '',
     ownerFirstName: '', ownerLastName: '', domain: '', dob: '',
+    parentName: '', parentEmail: '', parentPhone: '', parentOtp: '',
   });
 
   const [tempToken, setTempToken] = useState('');
@@ -265,6 +266,7 @@ function App() {
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
   const [signupType, setSignupType] = useState('PERSONAL');
+  const [parentOtpSent, setParentOtpSent] = useState(false);
   const topbarRightRef = useRef(null);
 
   const showLegalPage = (documentKey) => {
@@ -333,13 +335,13 @@ function App() {
     // Avoid duplicates by email/username
     const filteredAccounts = storedAccounts.filter(acc => acc.userData.email !== userData.email);
     // Use accountType and isPrimary from backend response
-    const updatedAccounts = [{ 
-      token, 
+    const updatedAccounts = [{
+      token,
       userData: {
         ...userData,
         accountType: userData.accountType, // Will be BUSINESS, PUBLIC, or CHILD
         isPrimary: userData.isPrimary || false
-      } 
+      }
     }, ...filteredAccounts];
     localStorage.setItem('bnx_accounts', JSON.stringify(updatedAccounts));
     localStorage.setItem('bnx_accessToken', token);
@@ -360,7 +362,7 @@ function App() {
         if (res.data.success) {
           const status = res.data.data.status;
           setVerificationStatus(status);
-          
+
           const upperStatus = status ? status.toUpperCase() : "";
           if (upperStatus === 'SUCCESS' || upperStatus === 'AUTHENTICATED' || upperStatus === 'VERIFIED') {
             setTimeout(() => {
@@ -416,7 +418,7 @@ function App() {
     const storedUser = localStorage.getItem('bnx_userData');
     const storedAccounts = JSON.parse(localStorage.getItem('bnx_accounts') || '[]');
     setAccounts(storedAccounts);
-    
+
     // 1. If it's an OAuth flow (cid present) and we have accounts, show selection
     if (cid && storedAccounts.length > 0) {
       setView('account-selection');
@@ -429,12 +431,12 @@ function App() {
         setView('restoring');
         try {
           const userData = JSON.parse(storedUser);
-          
+
           // Use fetchEmails as a validation call
           const res = await axios.get(`${API_BASE}/emails/list`, {
             headers: { Authorization: `Bearer ${storedToken}` }
           });
-          
+
           if (res.data.success) {
             setAccessToken(storedToken);
             setUserEmails(res.data.data.emails);
@@ -601,9 +603,9 @@ function App() {
         const readerElement = document.getElementById("reader");
         if (!readerElement) return;
 
-        scanner = new Html5QrcodeScanner("reader", { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 } 
+        scanner = new Html5QrcodeScanner("reader", {
+          fps: 10,
+          qrbox: { width: 250, height: 250 }
         }, false);
 
         const onScanSuccess = (decodedText) => {
@@ -770,7 +772,7 @@ function App() {
 
   const handleSelectAccount = async (account) => {
     const { token, userData } = account;
-    
+
     localStorage.setItem('bnx_last_identifier', userData.email);
     setFormData(prev => ({ ...prev, identifier: userData.email, password: '' }));
     setUseSavedAccount(true);
@@ -787,12 +789,12 @@ function App() {
     }
 
     setLoading(true);
-    
+
     // Set as active session
     localStorage.setItem('bnx_accessToken', token);
     localStorage.setItem('bnx_userData', JSON.stringify(userData));
     setAccessToken(token);
-    
+
     if (clientId && redirectUri) {
       try {
         const authRes = await axios.post(
@@ -828,14 +830,14 @@ function App() {
   const parseUserAgent = (ua) => {
     if (!ua) return { name: 'Unknown Device', type: 'monitor' };
     const lowerUA = ua.toLowerCase();
-    
+
     if (lowerUA.includes('iphone')) return { name: 'iPhone', type: 'phone' };
     if (lowerUA.includes('android')) return { name: 'Android Phone', type: 'phone' };
     if (lowerUA.includes('ipad')) return { name: 'iPad', type: 'tablet' };
     if (lowerUA.includes('macintosh')) return { name: 'MacBook', type: 'monitor' };
     if (lowerUA.includes('windows')) return { name: 'Windows PC', type: 'monitor' };
     if (lowerUA.includes('linux')) return { name: 'Linux PC', type: 'monitor' };
-    
+
     return { name: ua.split('/')[0] || 'Web Browser', type: 'monitor' };
   };
 
@@ -859,15 +861,15 @@ function App() {
 
   const PasswordRequirements = ({ password }) => {
     const { requirements } = validatePassword(password);
-    
+
     const missing = [];
     if (!requirements.minLength) missing.push("8+ characters");
     if (!requirements.hasUpper) missing.push("one uppercase");
     if (!requirements.hasNumber) missing.push("one number");
     if (!requirements.hasSpecial) missing.push("one special character");
-    
+
     if (missing.length === 0) return <p className="password-hint success">Password is strong</p>;
-    
+
     return <p className="password-hint error">Must include: {missing.join(", ")}</p>;
   };
 
@@ -887,7 +889,7 @@ function App() {
 
       if (loginRes.data.success) {
         const data = loginRes.data.data;
-        
+
         if (data.status === '2FA_REQUIRED') {
           setTempToken(data.tempToken);
           setView('login-2fa');
@@ -922,7 +924,7 @@ function App() {
             accountType: userData.accountType,
             isPrimary: userData.isPrimary
           });
-          
+
           setFormData(prev => ({ ...prev, identifier: userData.email, firstName: userData.firstName, lastName: userData.lastName }));
           setAccessToken(token);
           fetchEmails(token);
@@ -974,7 +976,7 @@ function App() {
       if (res.data.success) {
         const userData = res.data.data;
         const token = userData.accessToken;
-        
+
         const isB2AuthFlow = window.location.hostname.includes('b2auth.com') || window.location.hostname === 'localhost';
 
         if (isB2AuthFlow && !clientId) {
@@ -986,7 +988,7 @@ function App() {
             accountType: userData.accountType,
             isPrimary: userData.isPrimary
           });
-          
+
           setFormData(prev => ({ ...prev, identifier: userData.email, firstName: userData.firstName, lastName: userData.lastName }));
           setAccessToken(token);
           fetchEmails(token);
@@ -1047,8 +1049,57 @@ function App() {
       return;
     }
 
-    setFormData(prev => ({ ...prev, username: '', emailName: '' }));
-    setView('signup-mail');
+    if (signupType === 'CHILD') {
+      setParentOtpSent(false);
+      setView('signup-parent-verify');
+    } else {
+      setFormData(prev => ({ ...prev, username: '', emailName: '' }));
+      setView('signup-mail');
+    }
+  };
+
+  const handleSendParentOtp = async (e) => {
+    e.preventDefault();
+    if (!formData.parentEmail || !formData.parentEmail.trim()) {
+      setError('Parent email is required');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post(`${API_BASE}/auth/child/send-parent-otp`, { parentEmail: formData.parentEmail });
+      if (res.data.success) {
+        setParentOtpSent(true);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send OTP to parent');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyParentOtp = async (e) => {
+    e.preventDefault();
+    if (!formData.parentOtp || !formData.parentOtp.trim()) {
+      setError('Please enter the verification code');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post(`${API_BASE}/auth/child/verify-parent-otp`, { 
+        parentEmail: formData.parentEmail, 
+        otp: formData.parentOtp 
+      });
+      if (res.data.success) {
+        setFormData(prev => ({ ...prev, username: '', emailName: '' }));
+        setView('signup-mail');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid or expired OTP');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFinalSignupSubmit = async (e) => {
@@ -1069,6 +1120,10 @@ function App() {
       lastName: formData.lastName,
       dob: formData.dob
     };
+
+    if (signupType === 'CHILD') {
+      payload.parentEmail = formData.parentEmail;
+    }
 
     try {
       const regRes = await axios.post(`${API_BASE}/auth/register`, payload);
@@ -1215,7 +1270,7 @@ function App() {
     setError('');
     try {
       const normalizedEmail = normalizeIdentifier(formData.identifier);
-      console.log(normalizedEmail,method)
+      console.log(normalizedEmail, method)
       await axios.post(`${API_BASE}/auth/forgot-password/send-otp`, {
         identifier: normalizedEmail,
         method: method
@@ -1273,14 +1328,14 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.post(`${API_BASE}/auth/login/2fa/verify-otp`, { 
-        tempToken, 
-        otp: formData.otp 
+      const res = await axios.post(`${API_BASE}/auth/login/2fa/verify-otp`, {
+        tempToken,
+        otp: formData.otp
       });
       if (res.data.success) {
         saveAccount(res.data.data.accessToken, res.data.data);
         setAccessToken(res.data.data.accessToken);
-        
+
         // OAuth Redirection Fix
         if (clientId && redirectUri) {
           try {
@@ -1298,7 +1353,7 @@ function App() {
             console.error("OAuth Authorization failed after 2FA recovery", oauthErr);
           }
         }
-        
+
         fetchEmails(res.data.data.accessToken);
         fetchSessions(res.data.data.accessToken);
         fetchExternalSessions(res.data.data.accessToken);
@@ -1345,7 +1400,7 @@ function App() {
     localStorage.setItem('bnx_userData', JSON.stringify(account.userData));
     setAccessToken(account.token);
     setShowAccountSwitcher(false);
-    window.location.reload(); 
+    window.location.reload();
   };
 
   const handleSignOutAll = () => {
@@ -1437,7 +1492,7 @@ function App() {
           </div>
           <nav className="sidebar-nav">
             <button className="sidebar-item" onClick={() => setView('dashboard')}>
-              <div className="icon-box"><ChevronRight size={18} style={{transform: 'rotate(180deg)'}} /></div>
+              <div className="icon-box"><ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} /></div>
               <span className="label">Back to Dashboard</span>
             </button>
           </nav>
@@ -1546,16 +1601,16 @@ function App() {
         <header className="dashboard-topbar">
           <div className="topbar-left">
             <h1 className="tab-title">
-              {dashboardTab === 'emails' ? 'Dashboard' : 
-               dashboardTab === 'sessions' ? 'Security' :
-               dashboardTab === 'apps' ? 'Connected Apps' : 'Settings'}
+              {dashboardTab === 'emails' ? 'Dashboard' :
+                dashboardTab === 'sessions' ? 'Security' :
+                  dashboardTab === 'apps' ? 'Connected Apps' : 'Settings'}
             </h1>
           </div>
-          
+
           <div className="topbar-right" ref={topbarRightRef}>
             <div className="account-switcher-container">
-              <button 
-                className="profile-trigger-btn" 
+              <button
+                className="profile-trigger-btn"
                 onClick={() => setShowAccountSwitcher(!showAccountSwitcher)}
               >
                 <div className="avatar-circle-elite">
@@ -1580,9 +1635,9 @@ function App() {
 
                     <div className="other-accounts-section">
                       {accounts.filter(a => a.token !== accessToken).map(account => (
-                        <div 
-                          key={account.userData?.email} 
-                          className="account-row" 
+                        <div
+                          key={account.userData?.email}
+                          className="account-row"
                           onClick={() => handleSwitchAccount(account)}
                         >
                           <div className="row-avatar">
@@ -1624,16 +1679,16 @@ function App() {
             <img src={authLogo} alt="B2Auth" className="sidebar-logo-img" />
             <span className="brand-text">B2Auth</span>
           </div>
-          
+
           <nav className="sidebar-nav">
-            <button 
+            <button
               className={`sidebar-item ${dashboardTab === 'emails' ? 'active' : ''}`}
               onClick={() => setDashboardTab('emails')}
             >
               <div className="icon-box"><Mail size={18} /></div>
               <span className="label">Dashboard</span>
             </button>
-            <button 
+            <button
               className={`sidebar-item ${dashboardTab === 'security' ? 'active' : ''}`}
               onClick={() => {
                 setDashboardTab('security');
@@ -1646,7 +1701,7 @@ function App() {
               <div className="icon-box"><ShieldCheck size={18} /></div>
               <span className="label">Security</span>
             </button>
-            <button 
+            <button
               className={`sidebar-item ${dashboardTab === 'settings' ? 'active' : ''}`}
               onClick={() => setDashboardTab('settings')}
             >
@@ -1656,7 +1711,7 @@ function App() {
           </nav>
 
           <div className="sidebar-spacer"></div>
-          
+
           <footer className="sidebar-footer">
             {/* <div className="user-profile-card" onClick={handleProfileClick}>
               <div className="avatar">
@@ -1668,7 +1723,7 @@ function App() {
               </div>
               <ChevronRight size={16} className="switch-arrow" />
             </div> */}
-            
+
             <button className="sidebar-item logout-minimal" onClick={handleLogout}>
               <LogOut size={16} />
               <span>Sign Out</span>
@@ -1679,7 +1734,7 @@ function App() {
         <main className="dashboard-content">
           <AnimatePresence mode="wait">
             {dashboardTab === 'emails' && (
-              <motion.div 
+              <motion.div
                 key="emails"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1707,8 +1762,8 @@ function App() {
                         {email.isPrimary ? (
                           <span className="primary-pill-mini">Primary</span>
                         ) : (
-                          <button 
-                            className="row-action-btn" 
+                          <button
+                            className="row-action-btn"
                             onClick={() => handleMakePrimary(email.id)}
                             disabled={loading}
                           >
@@ -1724,7 +1779,7 @@ function App() {
                   </button> */}
                 </div>
 
-                <div className="accounts-dashboard-section" style={{marginTop: '40px'}}>
+                <div className="accounts-dashboard-section" style={{ marginTop: '40px' }}>
                   <header className="section-header">
                     <h2>Logged-in Identities</h2>
                     <p>Quickly switch between your active B2Auth accounts.</p>
@@ -1736,8 +1791,8 @@ function App() {
                       <h3 className="identity-group-title"><Briefcase size={14} /> Business Accounts</h3>
                       <div className="identity-container animate-scale-in">
                         {accounts.filter(a => a.userData.accountType === 'BUSINESS').map(account => (
-                          <div 
-                            key={account.userData.email} 
+                          <div
+                            key={account.userData.email}
                             className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
                             onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
                           >
@@ -1765,12 +1820,12 @@ function App() {
 
                   {/* Personal Accounts Section (PUBLIC or CHILD) */}
                   {accounts.some(a => a.userData.accountType !== 'BUSINESS') && (
-                    <div className="identity-group" style={{marginTop: '24px'}}>
+                    <div className="identity-group" style={{ marginTop: '24px' }}>
                       <h3 className="identity-group-title"><User size={14} /> Personal Accounts</h3>
                       <div className="identity-container animate-scale-in">
                         {accounts.filter(a => a.userData.accountType !== 'BUSINESS').map(account => (
-                          <div 
-                            key={account.userData.email} 
+                          <div
+                            key={account.userData.email}
                             className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
                             onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
                           >
@@ -1802,7 +1857,7 @@ function App() {
             )}
 
             {dashboardTab === 'security' && (
-              <motion.div 
+              <motion.div
                 key="security"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1840,20 +1895,20 @@ function App() {
                           <div className="identity-sub">{(profileData?.twoFactorEnabled || settingsData?.twoFactorEnabled) ? 'On' : 'Off'}</div>
                         </div>
                         <div className="identity-trailing">
-                           {(profileData?.twoFactorEnabled || settingsData?.twoFactorEnabled) ? (
-                             <div className="status-with-action">
-                               <div className="status-indicator-pill on">Enabled</div>
-                               <button className="row-action-btn disable-btn" onClick={handleDisable2FA}>Disable</button>
-                             </div>
-                           ) : (
-                             <button 
-                               className="row-action-btn"
-                               onClick={handleEnable2FA}
-                             >
-                               Enable
-                             </button>
-                           )}
-                         </div>
+                          {(profileData?.twoFactorEnabled || settingsData?.twoFactorEnabled) ? (
+                            <div className="status-with-action">
+                              <div className="status-indicator-pill on">Enabled</div>
+                              <button className="row-action-btn disable-btn" onClick={handleDisable2FA}>Disable</button>
+                            </div>
+                          ) : (
+                            <button
+                              className="row-action-btn"
+                              onClick={handleEnable2FA}
+                            >
+                              Enable
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1894,8 +1949,8 @@ function App() {
                           <div key={session.id} className="identity-row">
                             <div className="identity-leading">
                               <div className="identity-icon-box">
-                                {device.type === 'phone' ? <Smartphone size={18} /> : 
-                                 device.type === 'tablet' ? <Tablet size={18} /> : <Monitor size={18} />}
+                                {device.type === 'phone' ? <Smartphone size={18} /> :
+                                  device.type === 'tablet' ? <Tablet size={18} /> : <Monitor size={18} />}
                               </div>
                             </div>
                             <div className="identity-info">
@@ -1952,14 +2007,14 @@ function App() {
                       </div>
 
                       <div className="auth-tab-switcher">
-                        <button 
-                          className={addAuthMode === "scan" ? "active" : ""} 
+                        <button
+                          className={addAuthMode === "scan" ? "active" : ""}
                           onClick={() => setAddAuthMode("scan")}
                         >
                           Scan QR Code
                         </button>
-                        <button 
-                          className={addAuthMode === "manual" ? "active" : ""} 
+                        <button
+                          className={addAuthMode === "manual" ? "active" : ""}
                           onClick={() => setAddAuthMode("manual")}
                         >
                           Manual Entry
@@ -1969,30 +2024,30 @@ function App() {
                       <div className="auth-modal-body">
                         {addAuthMode === "scan" ? (
                           <div className="qr-scanner-container">
-                            <div id="reader" style={{width: "100%"}}></div>
+                            <div id="reader" style={{ width: "100%" }}></div>
                             <p className="scanner-hint">Point your camera at the QR code</p>
                           </div>
                         ) : (
                           <div className="manual-entry-form">
                             <div className="auth-input-group">
                               <label>Account Name</label>
-                              <input 
-                                type="text" 
-                                placeholder="e.g. GitHub: vishal" 
+                              <input
+                                type="text"
+                                placeholder="e.g. GitHub: vishal"
                                 value={manualAuthData.name}
-                                onChange={e => setManualAuthData({...manualAuthData, name: e.target.value})}
+                                onChange={e => setManualAuthData({ ...manualAuthData, name: e.target.value })}
                               />
                             </div>
                             <div className="auth-input-group">
                               <label>Secret Key</label>
-                              <input 
-                                type="text" 
-                                placeholder="Enter 2FA secret" 
+                              <input
+                                type="text"
+                                placeholder="Enter 2FA secret"
                                 value={manualAuthData.secret}
-                                onChange={e => setManualAuthData({...manualAuthData, secret: e.target.value})}
+                                onChange={e => setManualAuthData({ ...manualAuthData, secret: e.target.value })}
                               />
                             </div>
-                            <button 
+                            <button
                               className="action-btn primary-solid full-width"
                               onClick={() => handleAddAuthenticatorAccount(manualAuthData.name, manualAuthData.secret)}
                               disabled={!manualAuthData.name || !manualAuthData.secret}
@@ -2019,11 +2074,11 @@ function App() {
                       <div className="auth-modal-body">
                         <div className="auth-input-group">
                           <label>Current Password</label>
-                          <input 
-                            type="password" 
+                          <input
+                            type="password"
                             placeholder="Enter current password"
                             value={passwordForm.oldPassword}
-                            onChange={e => setPasswordForm({...passwordForm, oldPassword: e.target.value})}
+                            onChange={e => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
                           />
                           <div className="input-helper-link">
                             <button type="button" onClick={handleForgotInModal} className="text-link-btn-small">Forgot password?</button>
@@ -2031,25 +2086,25 @@ function App() {
                         </div>
                         <div className="auth-input-group">
                           <label>New Password</label>
-                          <input 
-                            type="password" 
+                          <input
+                            type="password"
                             placeholder="Enter new password"
                             value={passwordForm.newPassword}
-                            onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})}
+                            onChange={e => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                           />
                         </div>
                         <div className="auth-input-group">
-                          <label style={{marginTop:'10px'}}>Confirm New Password</label>
+                          <label style={{ marginTop: '10px' }}>Confirm New Password</label>
                           <input
-                            style={{marginBottom:'10px'}} 
-                            type="password" 
+                            style={{ marginBottom: '10px' }}
+                            type="password"
                             placeholder="Confirm new password"
                             value={passwordForm.confirmPassword}
-                            onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})}
+                            onChange={e => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                           />
                         </div>
                         {error && <div className="error-message-inline" style={{ marginBottom: "16px" }}>{error}</div>}
-                        <button 
+                        <button
                           className="action-btn primary-solid full-width"
                           onClick={handleChangePassword}
                           disabled={loading || !passwordForm.oldPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword}
@@ -2066,7 +2121,7 @@ function App() {
 
 
             {dashboardTab === 'settings' && (
-              <motion.div 
+              <motion.div
                 key="settings"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2077,23 +2132,23 @@ function App() {
                   <h2>Account Settings</h2>
                   <p>Manage your recovery information and security preferences.</p>
                 </header>
-                
+
                 <div className="settings-grid">
                   <div className="glass-card settings-card">
                     <div className="card-header">
                       <ShieldCheck size={20} className="accent-icon" />
                       <h3>Recovery Information</h3>
                     </div>
-                    
+
                     <div className="settings-form">
                       <div className="settings-group">
                         <label>Recovery Email</label>
                         <div className="input-with-icon">
                           <Mail size={18} />
-                          <input 
-                            type="email" 
-                            value={recoveryInfo.recoveryEmail || ''} 
-                            onChange={(e) => setRecoveryInfo({...recoveryInfo, recoveryEmail: e.target.value})}
+                          <input
+                            type="email"
+                            value={recoveryInfo.recoveryEmail || ''}
+                            onChange={(e) => setRecoveryInfo({ ...recoveryInfo, recoveryEmail: e.target.value })}
                             placeholder="Add recovery email"
                             disabled={!isEditingRecovery}
                           />
@@ -2104,10 +2159,10 @@ function App() {
                         <label>Phone Number</label>
                         <div className="input-with-icon">
                           <Phone size={18} />
-                          <input 
-                            type="text" 
-                            value={recoveryInfo.phoneNumber || ''} 
-                            onChange={(e) => setRecoveryInfo({...recoveryInfo, phoneNumber: e.target.value})}
+                          <input
+                            type="text"
+                            value={recoveryInfo.phoneNumber || ''}
+                            onChange={(e) => setRecoveryInfo({ ...recoveryInfo, phoneNumber: e.target.value })}
                             placeholder="Add phone number"
                             disabled={!isEditingRecovery}
                           />
@@ -2146,7 +2201,7 @@ function App() {
             )}
 
             {dashboardTab === 'activity' && (
-              <motion.div 
+              <motion.div
                 key="activity"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2174,8 +2229,8 @@ function App() {
     <div className="google-auth-container">
       <div className="auth-card">
         <div className="language-selector-container">
-          <select 
-            value={language} 
+          <select
+            value={language}
             onChange={(e) => setLanguage(e.target.value)}
             className="language-select"
           >
@@ -2203,8 +2258,8 @@ function App() {
             <h1 className="sign-in-to">Sign in to B2Auth</h1>
           )}
           <p className="use-account">
-            {view.startsWith('signup') ? 'Choose your account type' : 
-             view.startsWith('forgot-password') ? 'Verify your identity' : 'Use your BETA Account'}
+            {view.startsWith('signup') ? 'Choose your account type' :
+              view.startsWith('forgot-password') ? 'Verify your identity' : 'Use your BETA Account'}
           </p>
         </div>
 
@@ -2240,7 +2295,7 @@ function App() {
                   </div>
                 ))}
 
-                <button 
+                <button
                   className="add-account-action"
                   onClick={() => {
                     localStorage.removeItem('bnx_accessToken');
@@ -2273,12 +2328,12 @@ function App() {
                     <div className="input-field-group">
                       <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>2-Step Verification</label>
                       <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
-                        To help keep your account safe, B2Auth wants to make sure it's really you. 
+                        To help keep your account safe, B2Auth wants to make sure it's really you.
                         Enter the 6-digit code from your <b>Authenticator App</b>.
                       </p>
                       <div className="login-input-wrapper">
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           name="otp"
                           placeholder="Enter code"
                           value={formData.otp}
@@ -2287,20 +2342,20 @@ function App() {
                           autoFocus
                           className="otp-input-elite"
                           maxLength="6"
-                          style={{ 
-                            width: '100%', 
-                            padding: '16px', 
-                            borderRadius: '12px', 
-                            border: '2px solid #e2e8f0', 
-                            fontSize: '24px', 
-                            fontWeight: '700', 
+                          style={{
+                            width: '100%',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            border: '2px solid #e2e8f0',
+                            fontSize: '24px',
+                            fontWeight: '700',
                             textAlign: 'center',
                             letterSpacing: '4px'
                           }}
                         />
                       </div>
                       <div style={{ marginTop: '16px' }}>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => setShow2faRecovery(true)}
                           style={{ background: 'none', border: 'none', color: '#4f46e5', cursor: 'pointer', fontSize: '13px', fontWeight: '600', display: 'block', margin: '0 auto' }}
@@ -2324,7 +2379,7 @@ function App() {
                       <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
                         We will send a 6-digit recovery code to your registered secondary email address.
                       </p>
-                      
+
                       {successMessage && (
                         <div className="success-banner-elite" style={{ marginBottom: '16px' }}>
                           <CheckCircle size={18} />
@@ -2333,9 +2388,9 @@ function App() {
                       )}
 
                       <div style={{ marginBottom: '20px' }}>
-                        <button 
-                          type="button" 
-                          className="recovery-send-btn" 
+                        <button
+                          type="button"
+                          className="recovery-send-btn"
                           onClick={handleSend2faRecoveryOtp}
                           disabled={loading}
                         >
@@ -2344,8 +2399,8 @@ function App() {
                       </div>
 
                       <div className="login-input-wrapper">
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           name="otp"
                           placeholder="Enter 6-digit code"
                           value={formData.otp}
@@ -2353,20 +2408,20 @@ function App() {
                           required
                           className="otp-input-elite"
                           maxLength="6"
-                          style={{ 
-                            width: '100%', 
-                            padding: '16px', 
-                            borderRadius: '12px', 
-                            border: '2px solid #e2e8f0', 
-                            fontSize: '24px', 
-                            fontWeight: '700', 
+                          style={{
+                            width: '100%',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            border: '2px solid #e2e8f0',
+                            fontSize: '24px',
+                            fontWeight: '700',
                             textAlign: 'center',
                             letterSpacing: '4px'
                           }}
                         />
                       </div>
                       <div style={{ marginTop: '16px' }}>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => setShow2faRecovery(false)}
                           style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}
@@ -2417,13 +2472,13 @@ function App() {
                   </div>
                   <div className="input-field-group relogin-password-group">
                     <label>Password:</label>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       placeholder='Enter your password'
-                      name="password" 
-                      value={formData.password} 
-                      onChange={handleInputChange} 
-                      required 
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
                       autoFocus
                     />
                   </div>
@@ -2433,12 +2488,12 @@ function App() {
                   <div className="input-field-group">
                     <label>Email:</label>
                     <div className={`login-input-wrapper ${!formData.identifier.includes('@') ? 'has-domain-hint' : ''}`}>
-                      <input 
-                        type="text" 
-                        name="identifier" 
-                        value={formData.identifier} 
-                        onChange={handleInputChange} 
-                        required 
+                      <input
+                        type="text"
+                        name="identifier"
+                        value={formData.identifier}
+                        onChange={handleInputChange}
+                        required
                         placeholder="Username"
                       />
                       {!formData.identifier.includes('@') && <span className="domain-hint">@bnxmail.com</span>}
@@ -2446,26 +2501,26 @@ function App() {
                   </div>
                   <div className="input-field-group">
                     <label>Password:</label>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       placeholder='Enter your password'
-                      name="password" 
-                      value={formData.password} 
-                      onChange={handleInputChange} 
-                      required 
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
                     />
                   </div>
                 </div>
               )}
-              
+
               <div className="forgot-password-link" onClick={handleForgotPasswordClick}>
                 Forgot Password?
               </div>
 
               {accounts.length > 0 && (
-                <div 
-                  className="forgot-password-link" 
-                  style={{ marginTop: '-20px', marginBottom: '32px' }} 
+                <div
+                  className="forgot-password-link"
+                  style={{ marginTop: '-20px', marginBottom: '32px' }}
                   onClick={() => {
                     if (accounts.length === 1) {
                       const acc = accounts[0];
@@ -2491,17 +2546,17 @@ function App() {
               {/* <div><img src={authLogo} alt="" className="auth-logo" height={40} /></div> */}
               <div className="auth-footer-merged">
                 <div className="footer-right-links">
-                  <div style={{display:'flex',flexDirection:'row',gap:'9px'}}>
+                  <div style={{ display: 'flex', flexDirection: 'row', gap: '9px' }}>
                     <span>Help</span>
                     <button type="button" onClick={() => showLegalPage('privacy')}>Privacy</button>
                     <button type="button" onClick={() => showLegalPage('terms')}>Terms</button>
                   </div>
                   <div>
-                    <span style={{fontSize:'12px', color:'blue', fontFamily:'inherit'}}>Report Issue</span>
+                    <span style={{ fontSize: '12px', color: 'blue', fontFamily: 'inherit' }}>Report Issue</span>
                   </div>
                 </div>
                 {/* <div><LockOpenIcon size={20} /></div> */}
-                <div><img src={authLogo} alt="" className="auth-logo" height={40} style={{marginRight:'25px'}} /></div>
+                <div><img src={authLogo} alt="" className="auth-logo" height={40} style={{ marginRight: '25px' }} /></div>
                 <div className="footer-left-link" onClick={handleCreateAccountClick}>
                   Create Account
                 </div>
@@ -2559,7 +2614,7 @@ function App() {
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
               <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
-              
+
               <div className="input-group">
                 <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
                 <label>Password</label>
@@ -2603,7 +2658,7 @@ function App() {
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
               <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
-              
+
               <div className="input-group">
                 <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
                 <label>Password</label>
@@ -2612,6 +2667,88 @@ function App() {
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>Next</button>
+              </div>
+            </form>
+          )}
+
+          {view === 'signup-parent-verify' && (
+            <form onSubmit={parentOtpSent ? handleVerifyParentOtp : handleSendParentOtp} className="auth-step">
+              <div className="login-grid" style={{ width: '100%' }}>
+                <p style={{ fontSize: '14px', color: '#475569', marginBottom: '24px' }}>
+                  Please verify your parent's contact details. We'll send a verification code to their email.
+                </p>
+
+                <div className="input-group">
+                  <input 
+                    type="text" 
+                    name="parentName" 
+                    value={formData.parentName} 
+                    onChange={handleInputChange} 
+                    required 
+                    disabled={parentOtpSent}
+                    placeholder=" " 
+                  />
+                  <label>Parent Name</label>
+                </div>
+
+                <div className="input-group">
+                  <input 
+                    type="email" 
+                    name="parentEmail" 
+                    value={formData.parentEmail} 
+                    onChange={handleInputChange} 
+                    required 
+                    disabled={parentOtpSent}
+                    placeholder=" " 
+                  />
+                  <label>Parent Email Address</label>
+                </div>
+
+                <div className="input-group">
+                  <input 
+                    type="text" 
+                    name="parentPhone" 
+                    value={formData.parentPhone} 
+                    onChange={handleInputChange} 
+                    required 
+                    disabled={parentOtpSent}
+                    placeholder=" " 
+                  />
+                  <label>Parent Phone Number</label>
+                </div>
+
+                {parentOtpSent && (
+                  <div className="input-group animate-fade-in" style={{ marginTop: '20px' }}>
+                    <input 
+                      type="text" 
+                      name="parentOtp" 
+                      value={formData.parentOtp} 
+                      onChange={handleInputChange} 
+                      required 
+                      placeholder=" " 
+                    />
+                    <label>Verification Code (OTP)</label>
+                  </div>
+                )}
+              </div>
+
+              <div className="auth-actions" style={{ marginTop: '24px' }}>
+                <button 
+                  type="button" 
+                  className="text-btn" 
+                  onClick={() => {
+                    if (parentOtpSent) {
+                      setParentOtpSent(false);
+                    } else {
+                      setView('signup-child');
+                    }
+                  }}
+                >
+                  {parentOtpSent ? 'Change details' : 'Back'}
+                </button>
+                <button type="submit" className="primary-btn" disabled={loading}>
+                  {loading ? 'Verifying...' : (parentOtpSent ? 'Verify & Continue' : 'Send Verification Code')}
+                </button>
               </div>
             </form>
           )}
@@ -2633,11 +2770,11 @@ function App() {
                           const fullEmail = `${suggestion}@bnxmail.com`;
                           const isSelected = formData.emailName === suggestion;
                           return (
-                            <button 
+                            <button
                               key={suggestion}
                               type="button"
                               className={`suggestion-chip ${isSelected ? 'active' : ''}`}
-                              style={{ 
+                              style={{
                                 background: isSelected ? 'var(--primary)' : 'rgba(241, 245, 249, 0.8)',
                                 border: '1px solid',
                                 borderColor: isSelected ? 'var(--primary)' : '#e2e8f0',
@@ -2670,16 +2807,16 @@ function App() {
                   <div className="manual-handle-section" style={{ marginTop: '16px', width: '100%' }}>
                     <span className="suggestions-title" style={{ fontSize: '14px', fontWeight: '600', color: '#475569', marginBottom: '8px', display: 'block' }}>Or create your own:</span>
                     <div className="input-group-mail" style={{ display: 'flex', alignItems: 'center', position: 'relative', width: '100%' }}>
-                      <input 
-                        type="text" 
-                        name="emailName" 
-                        value={formData.emailName} 
+                      <input
+                        type="text"
+                        name="emailName"
+                        value={formData.emailName}
                         onChange={(e) => {
                           const val = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "");
                           setFormData(prev => ({ ...prev, username: val, emailName: val }));
                           setError('');
                         }}
-                        placeholder="Choose your handle" 
+                        placeholder="Choose your handle"
                         style={{ flexGrow: 1, paddingRight: '120px', width: '100%', boxSizing: 'border-box' }}
                       />
                       <span className="domain-suffix" style={{ position: 'absolute', right: '16px', color: '#64748b', fontSize: '14px', fontWeight: '500', pointerEvents: 'none' }}>@bnxmail.com</span>
@@ -2688,7 +2825,7 @@ function App() {
                 </div>
               </div>
               <div className="auth-actions" style={{ marginTop: '32px' }}>
-                <button type="button" className="text-btn" onClick={() => setView(signupType === 'CHILD' ? 'signup-child' : 'signup-profile')}>Back</button>
+                <button type="button" className="text-btn" onClick={() => setView(signupType === 'CHILD' ? 'signup-parent-verify' : 'signup-profile')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>
                   {loading ? 'Creating...' : 'Create Account'}
                 </button>
@@ -2700,13 +2837,13 @@ function App() {
             <form onSubmit={handleForgotPasswordIdentifierSubmit} className="auth-step">
               <div className="input-group">
                 <div className={`login-input-wrapper ${!formData.identifier.includes('@') ? 'has-domain-hint' : ''}`}>
-                  <input 
-                    type="text" 
-                    name="identifier" 
-                    value={formData.identifier} 
-                    onChange={handleInputChange} 
-                    required 
-                    placeholder=" " 
+                  <input
+                    type="text"
+                    name="identifier"
+                    value={formData.identifier}
+                    onChange={handleInputChange}
+                    required
+                    placeholder=" "
                   />
                   {!formData.identifier.includes('@') && <span className="domain-hint">@bnxmail.com</span>}
                   <label>Email or Username</label>
@@ -2727,7 +2864,7 @@ function App() {
                   <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
                     Select a recovery method to receive a verification code.
                   </p>
-                  
+
                   <div className="recovery-methods-list">
                     {recoveryOptions?.recoveryEmail && (
                       <div className="recovery-option-premium" onClick={() => handleSendOtp('EMAIL')}>
@@ -2767,8 +2904,8 @@ function App() {
                     A verification code was sent to your recovery method. Enter it below to continue.
                   </p>
                   <div className="login-input-wrapper">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       name="otp"
                       placeholder="Enter 6-digit code"
                       value={formData.otp}
