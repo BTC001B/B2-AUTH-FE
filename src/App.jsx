@@ -1044,8 +1044,19 @@ function App() {
       return;
     }
 
+    let finalUsername = formData.username?.trim();
+    if (!finalUsername) {
+      if (usernameSuggestions && usernameSuggestions.length > 0) {
+        finalUsername = usernameSuggestions[0];
+      } else {
+        setError('Username is required');
+        setLoading(false);
+        return;
+      }
+    }
+
     let payload = {
-      username: formData.username,
+      username: finalUsername,
       password: formData.password,
       mode: type
     };
@@ -1060,7 +1071,7 @@ function App() {
       const regRes = await axios.post(`${API_BASE}/auth/register`, payload);
       if (regRes.data.success) {
         setTempToken(regRes.data.data.tempToken);
-        setFormData(prev => ({ ...prev, emailName: prev.username }));
+        setFormData(prev => ({ ...prev, username: finalUsername, emailName: finalUsername }));
         setView('signup-mail');
       }
     } catch (err) {
@@ -2500,7 +2511,7 @@ function App() {
                 </div>
               )}
 
-              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username</label></div>
+              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} placeholder=" " /><label>Username</label></div>
               <div className="input-group">
                 <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
                 <label>Password</label>
@@ -2563,7 +2574,7 @@ function App() {
                 </div>
               )}
 
-              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username</label></div>
+              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} placeholder=" " /><label>Username</label></div>
               <div className="input-group">
                 <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
                 <label>Password</label>
