@@ -2673,7 +2673,7 @@ function App() {
 
           {view === 'signup-parent-verify' && (
             <form onSubmit={parentOtpSent ? handleVerifyParentOtp : handleSendParentOtp} className="auth-step">
-              <div className="login-grid" style={{ width: '100%' }}>
+              <div className="login-grid-2f" style={{ width: '100%' }}>
                 <p style={{ fontSize: '14px', color: '#475569', marginBottom: '24px' }}>
                   Please verify your parent's contact details. We'll send a verification code to their email.
                 </p>
