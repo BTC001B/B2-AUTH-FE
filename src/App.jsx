@@ -264,6 +264,7 @@ function App() {
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
+  const [signupType, setSignupType] = useState('PERSONAL');
   const topbarRightRef = useRef(null);
 
   const showLegalPage = (documentKey) => {
@@ -1027,9 +1028,75 @@ function App() {
   const handleCreateAccountClick = () => {
     setError('');
     if (registrationMode === 'business') setView('signup-business');
-    else if (registrationMode === 'child') setView('signup-child');
-    else if (registrationMode === 'public') setView('signup-profile');
-    else setView('signup-selection');
+    else if (registrationMode === 'child') {
+      setSignupType('CHILD');
+      setView('signup-child');
+    } else if (registrationMode === 'public') {
+      setSignupType('PERSONAL');
+      setView('signup-profile');
+    } else setView('signup-selection');
+  };
+
+  const handleGoToMailSignup = (e) => {
+    e.preventDefault();
+    setError('');
+
+    const { isValid } = validatePassword(formData.password);
+    if (!isValid) {
+      setError('Password does not meet the security requirements');
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, username: '', emailName: '' }));
+    setView('signup-mail');
+  };
+
+  const handleFinalSignupSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.username || !formData.username.trim()) {
+      setError('Please select a suggested email handle or type one');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    const payload = {
+      username: formData.username,
+      password: formData.password,
+      mode: signupType,
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      dob: formData.dob
+    };
+
+    try {
+      const regRes = await axios.post(`${API_BASE}/auth/register`, payload);
+      if (regRes.data.success) {
+        const token = regRes.data.data.tempToken;
+        const mailRes = await axios.post(
+          `${API_BASE}/emails/create`,
+          { emailName: formData.username, password: formData.password, isPrimary: true },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (mailRes.data.success) {
+          setFormData(prev => ({ ...prev, identifier: mailRes.data.data.email }));
+          setView('login-password');
+        }
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMailFormSubmit = (e) => {
+    if (tempToken) {
+      handleCreateMailbox(e);
+    } else {
+      handleFinalSignupSubmit(e);
+    }
   };
 
   const handleRegisterProfile = async (e, type = 'PERSONAL') => {
@@ -2446,7 +2513,7 @@ function App() {
           {view === 'signup-selection' && (
             <div className="auth-step selection-view">
               <div className="selection-grid">
-                <div className="selection-card-premium" onClick={() => setView('signup-profile')}>
+                <div className="selection-card-premium" onClick={() => { setSignupType('PERSONAL'); setView('signup-profile'); }}>
                   <div className="selection-icon-circle">
                     <User size={32} />
                   </div>
@@ -2457,7 +2524,7 @@ function App() {
                   <ChevronRight className="arrow-icon" size={20} />
                 </div>
 
-                <div className="selection-card-premium" onClick={() => setView('signup-child')}>
+                <div className="selection-card-premium" onClick={() => { setSignupType('CHILD'); setView('signup-child'); }}>
                   <div className="selection-icon-circle accent">
                     <User size={32} />
                   </div>
@@ -2486,32 +2553,13 @@ function App() {
           )}
 
           {view === 'signup-profile' && (
-            <form onSubmit={(e) => handleRegisterProfile(e, 'PERSONAL')} className="auth-step">
+            <form onSubmit={handleGoToMailSignup} className="auth-step">
               <div className="name-grid">
                 <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First name</label></div>
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
               <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
               
-              {usernameSuggestions && usernameSuggestions.length > 0 && (
-                <div className="username-suggestions-container">
-                  <span className="suggestions-title">Suggested handles:</span>
-                  <div className="suggestions-list">
-                    {usernameSuggestions.map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        type="button"
-                        className="suggestion-chip"
-                        onClick={() => setFormData(prev => ({ ...prev, username: suggestion }))}
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} placeholder=" " /><label>Username</label></div>
               <div className="input-group">
                 <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
                 <label>Password</label>
@@ -2549,32 +2597,13 @@ function App() {
           )}
 
           {view === 'signup-child' && (
-            <form onSubmit={(e) => handleRegisterProfile(e, 'CHILD')} className="auth-step">
+            <form onSubmit={handleGoToMailSignup} className="auth-step">
               <div className="name-grid">
                 <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First name</label></div>
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
               <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
               
-              {usernameSuggestions && usernameSuggestions.length > 0 && (
-                <div className="username-suggestions-container">
-                  <span className="suggestions-title">Suggested handles:</span>
-                  <div className="suggestions-list">
-                    {usernameSuggestions.map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        type="button"
-                        className="suggestion-chip"
-                        onClick={() => setFormData(prev => ({ ...prev, username: suggestion }))}
-                      >
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} placeholder=" " /><label>Username</label></div>
               <div className="input-group">
                 <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
                 <label>Password</label>
@@ -2588,13 +2617,83 @@ function App() {
           )}
 
           {view === 'signup-mail' && (
-            <form onSubmit={handleCreateMailbox} className="auth-step">
-              <div className="input-group-mail">
-                <input type="text" name="emailName" value={formData.emailName} onChange={handleInputChange} required placeholder="Choose your handle" />
-                <span className="domain-suffix">@bnxmail.com</span>
+            <form onSubmit={handleMailFormSubmit} className="auth-step-merged">
+              <div className="login-grid">
+                <div className="input-field-group" style={{ width: '100%' }}>
+                  <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>Choose your email address</label>
+                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
+                    Select one of the suggested handles or enter a custom one.
+                  </p>
+
+                  {usernameSuggestions && usernameSuggestions.length > 0 && (
+                    <div className="username-suggestions-container" style={{ marginBottom: '24px', width: '100%' }}>
+                      <span className="suggestions-title" style={{ fontSize: '14px', fontWeight: '600', color: '#475569', marginBottom: '12px', display: 'block' }}>Suggested handles:</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                        {usernameSuggestions.map((suggestion) => {
+                          const fullEmail = `${suggestion}@bnxmail.com`;
+                          const isSelected = formData.emailName === suggestion;
+                          return (
+                            <div 
+                              key={suggestion}
+                              className={`recovery-option-premium ${isSelected ? 'active' : ''}`}
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                padding: '12px 16px', 
+                                borderRadius: '12px', 
+                                border: isSelected ? '2px solid var(--primary)' : '1px solid #e2e8f0', 
+                                cursor: 'pointer',
+                                background: isSelected ? 'rgba(79, 70, 229, 0.04)' : '#ffffff',
+                                transition: 'all 0.2s ease',
+                                boxSizing: 'border-box',
+                                width: '100%'
+                              }}
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, username: suggestion, emailName: suggestion }));
+                                setError('');
+                              }}
+                            >
+                              <div className="option-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', background: isSelected ? 'var(--primary)' : '#f1f5f9', color: isSelected ? '#ffffff' : '#64748b', marginRight: '12px', flexShrink: 0 }}>
+                                <Mail size={18} />
+                              </div>
+                              <div className="option-info" style={{ flexGrow: 1, minWidth: 0 }}>
+                                <span style={{ fontSize: '14px', fontWeight: isSelected ? '600' : '500', color: isSelected ? 'var(--primary)' : '#334155', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {fullEmail}
+                                </span>
+                              </div>
+                              {isSelected && <CheckCircle size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="manual-handle-section" style={{ marginTop: '16px', width: '100%' }}>
+                    <span className="suggestions-title" style={{ fontSize: '14px', fontWeight: '600', color: '#475569', marginBottom: '8px', display: 'block' }}>Or create your own:</span>
+                    <div className="input-group-mail" style={{ display: 'flex', alignItems: 'center', position: 'relative', width: '100%' }}>
+                      <input 
+                        type="text" 
+                        name="emailName" 
+                        value={formData.emailName} 
+                        onChange={(e) => {
+                          const val = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, "");
+                          setFormData(prev => ({ ...prev, username: val, emailName: val }));
+                          setError('');
+                        }}
+                        placeholder="Choose your handle" 
+                        style={{ flexGrow: 1, paddingRight: '120px', width: '100%', boxSizing: 'border-box' }}
+                      />
+                      <span className="domain-suffix" style={{ position: 'absolute', right: '16px', color: '#64748b', fontSize: '14px', fontWeight: '500', pointerEvents: 'none' }}>@bnxmail.com</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="auth-actions">
-                <button type="submit" className="primary-btn" disabled={loading}>Create Email</button>
+              <div className="auth-actions" style={{ marginTop: '32px' }}>
+                <button type="button" className="text-btn" onClick={() => setView(signupType === 'CHILD' ? 'signup-child' : 'signup-profile')}>Back</button>
+                <button type="submit" className="primary-btn" disabled={loading}>
+                  {loading ? 'Creating...' : 'Create Account'}
+                </button>
               </div>
             </form>
           )}
