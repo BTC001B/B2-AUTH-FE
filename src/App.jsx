@@ -2755,7 +2755,7 @@ function App() {
 
           {view === 'signup-mail' && (
             <form onSubmit={handleMailFormSubmit} className="auth-step-merged">
-              <div className="login-grid">
+              <div className="login-grid-2f">
                 <div className="input-field-group" style={{ width: '100%' }}>
                   <label style={{ fontSize: '18px', fontWeight: '700', display: 'block', marginBottom: '8px' }}>Choose your email address</label>
                   <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px' }}>
