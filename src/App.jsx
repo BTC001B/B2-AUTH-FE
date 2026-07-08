@@ -2627,42 +2627,40 @@ function App() {
 
                   {usernameSuggestions && usernameSuggestions.length > 0 && (
                     <div className="username-suggestions-container" style={{ marginBottom: '24px', width: '100%' }}>
-                      <span className="suggestions-title" style={{ fontSize: '14px', fontWeight: '600', color: '#475569', marginBottom: '12px', display: 'block' }}>Suggested handles:</span>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                      <span className="suggestions-title" style={{ fontSize: '13px', fontWeight: '600', color: '#64748b', marginBottom: '12px', display: 'block' }}>Suggested email addresses:</span>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', width: '100%' }}>
                         {usernameSuggestions.map((suggestion) => {
                           const fullEmail = `${suggestion}@bnxmail.com`;
                           const isSelected = formData.emailName === suggestion;
                           return (
-                            <div 
+                            <button 
                               key={suggestion}
-                              className={`recovery-option-premium ${isSelected ? 'active' : ''}`}
+                              type="button"
+                              className={`suggestion-chip ${isSelected ? 'active' : ''}`}
                               style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                padding: '12px 16px', 
-                                borderRadius: '12px', 
-                                border: isSelected ? '2px solid var(--primary)' : '1px solid #e2e8f0', 
+                                background: isSelected ? 'var(--primary)' : 'rgba(241, 245, 249, 0.8)',
+                                border: '1px solid',
+                                borderColor: isSelected ? 'var(--primary)' : '#e2e8f0',
+                                borderRadius: '20px',
+                                padding: '8px 16px',
+                                fontSize: '13px',
+                                color: isSelected ? '#ffffff' : '#334155',
+                                fontWeight: '600',
                                 cursor: 'pointer',
-                                background: isSelected ? 'rgba(79, 70, 229, 0.04)' : '#ffffff',
                                 transition: 'all 0.2s ease',
-                                boxSizing: 'border-box',
-                                width: '100%'
+                                outline: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
                               }}
                               onClick={() => {
                                 setFormData(prev => ({ ...prev, username: suggestion, emailName: suggestion }));
                                 setError('');
                               }}
                             >
-                              <div className="option-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', background: isSelected ? 'var(--primary)' : '#f1f5f9', color: isSelected ? '#ffffff' : '#64748b', marginRight: '12px', flexShrink: 0 }}>
-                                <Mail size={18} />
-                              </div>
-                              <div className="option-info" style={{ flexGrow: 1, minWidth: 0 }}>
-                                <span style={{ fontSize: '14px', fontWeight: isSelected ? '600' : '500', color: isSelected ? 'var(--primary)' : '#334155', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {fullEmail}
-                                </span>
-                              </div>
-                              {isSelected && <CheckCircle size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />}
-                            </div>
+                              <Mail size={14} style={{ color: isSelected ? '#ffffff' : '#64748b' }} />
+                              <span>{fullEmail}</span>
+                            </button>
                           );
                         })}
                       </div>

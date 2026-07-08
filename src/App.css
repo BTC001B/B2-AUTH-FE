@@ -2947,3 +2947,11 @@ body {
 .suggestion-chip:active {
   transform: translateY(0);
 }
+
+.suggestion-chip.active {
+  background: var(--primary) !important;
+  color: #ffffff !important;
+  border-color: var(--primary) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.15), 0 2px 4px -1px rgba(79, 70, 229, 0.08);
+}
