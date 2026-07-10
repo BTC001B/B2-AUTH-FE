@@ -2846,7 +2846,7 @@ function App() {
 
           {view === 'signup-password-setup' && (
             <form onSubmit={handleFinalSignupSubmit} className="auth-step">
-              <div className="login-grid" style={{ width: '100%' }}>
+              <div className="login-grid-2f" style={{ width: '100%' }}>
                 <p style={{ fontSize: '14px', color: '#475569', marginBottom: '24px' }}>
                   Create a strong password for your new email address: <strong style={{ color: 'var(--primary)' }}>{formData.emailName}@bnxmail.com</strong>
                 </p>
