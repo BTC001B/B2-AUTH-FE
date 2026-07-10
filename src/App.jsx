@@ -485,6 +485,27 @@ function App() {
     }
   }, []);
 
+  const resetSignupForm = () => {
+    setFormData(prev => ({
+      ...prev,
+      firstName: '',
+      lastName: '',
+      dob: '',
+      username: '',
+      emailName: '',
+      parentName: '',
+      parentEmail: '',
+      parentPhone: '',
+      parentOtp: '',
+      password: '',
+      confirmPassword: '',
+      businessName: '',
+      registrationNumber: ''
+    }));
+    setError('');
+    setParentOtpSent(false);
+  };
+
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     setError('');
@@ -1109,7 +1130,9 @@ function App() {
         return;
       }
       if (age >= 18) {
-        setError('Child account is for ages 5-17. For 18+, please register a personal account.');
+        setSignupType('PERSONAL');
+        setView('signup-profile');
+        setError('You are 18 or older so open the personal account');
         return;
       }
       setParentOtpSent(false);
@@ -2712,7 +2735,7 @@ function App() {
           {view === 'signup-selection' && (
             <div className="auth-step selection-view">
               <div className="selection-grid">
-                <div className="selection-card-premium" onClick={() => { setSignupType('PERSONAL'); setView('signup-profile'); }}>
+                <div className="selection-card-premium" onClick={() => { resetSignupForm(); setSignupType('PERSONAL'); setView('signup-profile'); }}>
                   <div className="selection-icon-circle">
                     <User size={32} />
                   </div>
@@ -2723,7 +2746,7 @@ function App() {
                   <ChevronRight className="arrow-icon" size={20} />
                 </div>
 
-                <div className="selection-card-premium" onClick={() => { setSignupType('CHILD'); setView('signup-child'); }}>
+                <div className="selection-card-premium" onClick={() => { resetSignupForm(); setSignupType('CHILD'); setView('signup-child'); }}>
                   <div className="selection-icon-circle accent">
                     <User size={32} />
                   </div>
@@ -2734,7 +2757,7 @@ function App() {
                   <ChevronRight className="arrow-icon" size={20} />
                 </div>
 
-                <div className="selection-card-premium" onClick={() => { setSignupType('BUSINESS'); setView('signup-business'); }}>
+                <div className="selection-card-premium" onClick={() => { resetSignupForm(); setSignupType('BUSINESS'); setView('signup-business'); }}>
                   <div className="selection-icon-circle business">
                     <Briefcase size={32} />
                   </div>
