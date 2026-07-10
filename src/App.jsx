@@ -1043,12 +1043,6 @@ function App() {
     e.preventDefault();
     setError('');
 
-    const { isValid } = validatePassword(formData.password);
-    if (!isValid) {
-      setError('Password does not meet the security requirements');
-      return;
-    }
-
     if (signupType === 'CHILD') {
       setParentOtpSent(false);
       setView('signup-parent-verify');
@@ -1106,6 +1100,18 @@ function App() {
     e.preventDefault();
     if (!formData.username || !formData.username.trim()) {
       setError('Please select a suggested email handle or type one');
+      setView('signup-mail');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    const { isValid } = validatePassword(formData.password);
+    if (!isValid) {
+      setError('Password does not meet the security requirements');
       return;
     }
 
@@ -1147,10 +1153,18 @@ function App() {
   };
 
   const handleMailFormSubmit = (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!formData.username || !formData.username.trim()) {
+      setError('Please select a suggested email handle or type one');
+      return;
+    }
+
     if (tempToken) {
       handleCreateMailbox(e);
     } else {
-      handleFinalSignupSubmit(e);
+      setView('signup-password-setup');
     }
   };
 
@@ -2258,8 +2272,15 @@ function App() {
             <h1 className="sign-in-to">Sign in to B2Auth</h1>
           )}
           <p className="use-account">
-            {view.startsWith('signup') ? 'Choose your account type' :
-              view.startsWith('forgot-password') ? 'Verify your identity' : 'Use your BETA Account'}
+            {view === 'signup-selection' ? 'Choose your account type' :
+             view === 'signup-profile' ? 'Enter your profile details' :
+             view === 'signup-child' ? 'Enter child\'s profile details' :
+             view === 'signup-parent-verify' ? 'Parent verification details' :
+             view === 'signup-business' ? 'Enter business details' :
+             view === 'signup-mail' ? 'Choose your email address' :
+             view === 'signup-password-setup' ? 'Choose a strong password' :
+             view.startsWith('signup') ? 'Create your account' :
+             view.startsWith('forgot-password') ? 'Verify your identity' : 'Use your BETA Account'}
           </p>
         </div>
 
@@ -2614,12 +2635,7 @@ function App() {
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
               <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
-
-              <div className="input-group">
-                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
-                <label>Password</label>
-              </div>
-              <PasswordRequirements password={formData.password} />
+              
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>Next</button>
@@ -2659,11 +2675,6 @@ function App() {
               </div>
               <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
 
-              <div className="input-group">
-                <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
-                <label>Password</label>
-              </div>
-              <PasswordRequirements password={formData.password} />
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>Next</button>
@@ -2826,6 +2837,49 @@ function App() {
               </div>
               <div className="auth-actions" style={{ marginTop: '32px' }}>
                 <button type="button" className="text-btn" onClick={() => setView(signupType === 'CHILD' ? 'signup-parent-verify' : 'signup-profile')}>Back</button>
+                <button type="submit" className="primary-btn" disabled={loading}>
+                  {tempToken ? (loading ? 'Creating...' : 'Create Email') : 'Next'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {view === 'signup-password-setup' && (
+            <form onSubmit={handleFinalSignupSubmit} className="auth-step">
+              <div className="login-grid" style={{ width: '100%' }}>
+                <p style={{ fontSize: '14px', color: '#475569', marginBottom: '24px' }}>
+                  Create a strong password for your new email address: <strong style={{ color: 'var(--primary)' }}>{formData.emailName}@bnxmail.com</strong>
+                </p>
+
+                <div className="input-group">
+                  <input 
+                    type="password" 
+                    name="password" 
+                    value={formData.password} 
+                    onChange={handleInputChange} 
+                    required 
+                    placeholder=" " 
+                  />
+                  <label>Password</label>
+                </div>
+
+                <div className="input-group" style={{ marginTop: '20px' }}>
+                  <input 
+                    type="password" 
+                    name="confirmPassword" 
+                    value={formData.confirmPassword} 
+                    onChange={handleInputChange} 
+                    required 
+                    placeholder=" " 
+                  />
+                  <label>Confirm Password</label>
+                </div>
+
+                <PasswordRequirements password={formData.password} />
+              </div>
+
+              <div className="auth-actions" style={{ marginTop: '32px' }}>
+                <button type="button" className="text-btn" onClick={() => setView('signup-mail')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>
                   {loading ? 'Creating...' : 'Create Account'}
                 </button>
