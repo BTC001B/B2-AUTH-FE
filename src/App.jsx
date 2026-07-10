@@ -2634,7 +2634,7 @@ function App() {
                 <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First name</label></div>
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
-              <div className="input-group py-2"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
+              <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
               
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
@@ -2673,7 +2673,7 @@ function App() {
                 <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First name</label></div>
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last name</label></div>
               </div>
-              <div className="input-group py-2"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
+              <div className="input-group"><input type="date" name="dob" value={formData.dob} onChange={handleInputChange} required placeholder=" " /><label>Date of Birth</label></div>
 
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
@@ -2684,7 +2684,7 @@ function App() {
 
           {view === 'signup-parent-verify' && (
             <form onSubmit={parentOtpSent ? handleVerifyParentOtp : handleSendParentOtp} className="auth-step">
-              <div className="login-grid-2f" style={{ width: '100%' }}>
+              <div className="signup-inputs-container">
                 <p style={{ fontSize: '14px', color: '#475569', marginBottom: '24px' }}>
                   Please verify your parent's contact details. We'll send a verification code to their email.
                 </p>
@@ -2743,7 +2743,7 @@ function App() {
                 )}
               </div>
 
-              <div className="auth-actions" style={{ marginTop: '24px' }}>
+              <div className="auth-actions">
                 <button 
                   type="button" 
                   className="text-btn" 
@@ -2835,7 +2835,7 @@ function App() {
                   </div>
                 </div>
               </div>
-              <div className="auth-actions" style={{ marginTop: '32px' }}>
+              <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView(signupType === 'CHILD' ? 'signup-parent-verify' : 'signup-profile')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>
                   {tempToken ? (loading ? 'Creating...' : 'Create Email') : 'Next'}
@@ -2846,7 +2846,7 @@ function App() {
 
           {view === 'signup-password-setup' && (
             <form onSubmit={handleFinalSignupSubmit} className="auth-step">
-              <div className="login-grid-2f" style={{ width: '100%' }}>
+              <div className="signup-inputs-container">
                 <p style={{ fontSize: '14px', color: '#475569', marginBottom: '24px' }}>
                   Create a strong password for your new email address: <strong style={{ color: 'var(--primary)' }}>{formData.emailName}@bnxmail.com</strong>
                 </p>
@@ -2863,7 +2863,7 @@ function App() {
                   <label>Password</label>
                 </div>
 
-                <div className="input-group" style={{ marginTop: '20px' }}>
+                <div className="input-group">
                   <input 
                     type="password" 
                     name="confirmPassword" 
@@ -2878,7 +2878,7 @@ function App() {
                 <PasswordRequirements password={formData.password} />
               </div>
 
-              <div className="auth-actions" style={{ marginTop: '32px' }}>
+              <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-mail')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>
                   {loading ? 'Creating...' : 'Create Account'}

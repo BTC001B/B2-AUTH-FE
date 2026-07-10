@@ -2810,7 +2810,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
 }
 
 .business-signup-grid {
@@ -2955,4 +2955,33 @@ body {
   border-color: var(--primary) !important;
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.15), 0 2px 4px -1px rgba(79, 70, 229, 0.08);
+}
+
+/* Signup & Actions Layout Spacing Improvements */
+.auth-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 32px;
+  width: 100%;
+}
+
+.auth-actions .primary-btn {
+  width: auto;
+  min-width: 160px;
+}
+
+.auth-actions:not(:has(.text-btn)) {
+  justify-content: center;
+}
+
+.auth-actions:not(:has(.text-btn)) .primary-btn {
+  width: 100%;
+}
+
+.signup-inputs-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
 }
