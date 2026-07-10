@@ -1065,16 +1065,55 @@ function App() {
     } else setView('signup-selection');
   };
 
+  const calculateAge = (dobString) => {
+    if (!dobString) return 0;
+    const today = new Date();
+    const birthDate = new Date(dobString);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
   const handleGoToMailSignup = (e) => {
     e.preventDefault();
     setError('');
 
-    if (signupType === 'CHILD') {
-      setParentOtpSent(false);
-      setView('signup-parent-verify');
-    } else {
+    if (signupType === 'BUSINESS') {
       setFormData(prev => ({ ...prev, username: '', emailName: '' }));
       setView('signup-mail');
+      return;
+    }
+
+    const age = calculateAge(formData.dob);
+
+    if (signupType === 'PERSONAL') {
+      if (age < 5) {
+        setError('Age must be at least 5 years old to register.');
+        return;
+      }
+      if (age < 18) {
+        setSignupType('CHILD');
+        setView('signup-child');
+        setError('You are under 18 so open the child account');
+        return;
+      }
+      
+      setFormData(prev => ({ ...prev, username: '', emailName: '' }));
+      setView('signup-mail');
+    } else if (signupType === 'CHILD') {
+      if (age < 5) {
+        setError('Child must be at least 5 years old to register.');
+        return;
+      }
+      if (age >= 18) {
+        setError('Child account is for ages 5-17. For 18+, please register a personal account.');
+        return;
+      }
+      setParentOtpSent(false);
+      setView('signup-parent-verify');
     }
   };
 
