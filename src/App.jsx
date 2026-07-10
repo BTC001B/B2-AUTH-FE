@@ -2848,7 +2848,7 @@ function App() {
             <form onSubmit={handleFinalSignupSubmit} className="auth-step">
               <div className="signup-inputs-container">
                 <p style={{ fontSize: '14px', color: '#475569', marginBottom: '24px' }}>
-                  Create a strong password for your new email address: <strong style={{ color: 'var(--primary)' }}>{formData.emailName}@bnxmail.com</strong>
+                  Create a strong password for your new email address: <strong style={{ color: 'var(--primary)', textAlign: 'center' }}>{formData.emailName}@bnxmail.com</strong>
                 </p>
 
                 <div className="input-group">
