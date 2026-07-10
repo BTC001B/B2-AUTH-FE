@@ -267,6 +267,18 @@ function App() {
   const [usernameSuggestions, setUsernameSuggestions] = useState([]);
   const [signupType, setSignupType] = useState('PERSONAL');
   const [parentOtpSent, setParentOtpSent] = useState(false);
+  const [onboardingData, setOnboardingData] = useState({
+    businessType: 'Private Limited',
+    industry: '',
+    companySize: '',
+    businessWebsite: '',
+    businessAddress: '',
+    profilePhoto: null,
+    timeZone: 'UTC',
+    language: 'English (US)',
+    companyLogo: null,
+    acceptTerms: false
+  });
   const topbarRightRef = useRef(null);
 
   const showLegalPage = (documentKey) => {
@@ -432,26 +444,33 @@ function App() {
         try {
           const userData = JSON.parse(storedUser);
 
-          // Use fetchEmails as a validation call
-          const res = await axios.get(`${API_BASE}/emails/list`, {
-            headers: { Authorization: `Bearer ${storedToken}` }
-          });
+          // Use fetchEmails & profile as a validation call
+          const [res, meRes] = await Promise.all([
+            axios.get(`${API_BASE}/emails/list`, { headers: { Authorization: `Bearer ${storedToken}` } }),
+            axios.get(`${API_BASE}/users/me`, { headers: { Authorization: `Bearer ${storedToken}` } })
+          ]);
 
-          if (res.data.success) {
+          if (res.data.success && meRes.data.success) {
             setAccessToken(storedToken);
             setUserEmails(res.data.data.emails);
+            const profile = meRes.data.data;
+            setProfileData(profile);
             setFormData(prev => ({
               ...prev,
-              identifier: userData.email || userData.username || '',
-              firstName: userData.firstName || '',
-              lastName: userData.lastName || ''
+              identifier: profile.email || profile.username || '',
+              firstName: profile.firstName || '',
+              lastName: profile.lastName || ''
             }));
             // fetch others in parallel
-            fetchFullProfile(storedToken);
             fetchSessions(storedToken);
             fetchExternalSessions(storedToken);
             fetchRecoveryInfo(storedToken);
-            setView('dashboard');
+            
+            if (profile.accountType === 'BUSINESS' && !profile.onboarded) {
+              setView('signup-business-onboarding');
+            } else {
+              setView('dashboard');
+            }
           } else {
             handleLogout();
           }
@@ -931,7 +950,12 @@ function App() {
           fetchSessions(token);
           fetchExternalSessions(token);
           fetchRecoveryInfo(token);
-          setView('dashboard');
+          
+          if (userData.accountType === 'BUSINESS' && !userData.onboarded) {
+            setView('signup-business-onboarding');
+          } else {
+            setView('dashboard');
+          }
         } else if (clientId && redirectUri) {
           // Still save the account for future use
           saveAccount(token, {
@@ -1096,6 +1120,53 @@ function App() {
     }
   };
 
+  const handleFileChange = (e, field) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setOnboardingData(prev => ({
+          ...prev,
+          [field]: reader.result
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleOnboardingSubmit = async (e) => {
+    e.preventDefault();
+    if (!onboardingData.acceptTerms) {
+      setError('You must accept the Terms of Service & Privacy Policy');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post(`${API_BASE}/business/onboard`, onboardingData, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.data.success) {
+        // Fallback flag for extra client-side routing speed
+        localStorage.setItem('bnx_business_onboarded_' + formData.identifier, 'true');
+        
+        // Fetch fresh profile state to sync profile photo, logo, etc.
+        const meRes = await axios.get(`${API_BASE}/users/me`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        if (meRes.data.success) {
+          setProfileData(meRes.data.data);
+        }
+        
+        setView('dashboard');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to complete business profile onboarding.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFinalSignupSubmit = async (e) => {
     e.preventDefault();
     if (!formData.username || !formData.username.trim()) {
@@ -1129,6 +1200,14 @@ function App() {
 
     if (signupType === 'CHILD') {
       payload.parentEmail = formData.parentEmail;
+    }
+
+    if (signupType === 'BUSINESS') {
+      payload.ownerFirstName = formData.firstName;
+      payload.ownerLastName = formData.lastName;
+      payload.businessName = formData.businessName;
+      payload.registrationNumber = formData.registrationNumber;
+      payload.domain = 'bnxmail.com';
     }
 
     try {
@@ -2611,7 +2690,7 @@ function App() {
                   <ChevronRight className="arrow-icon" size={20} />
                 </div>
 
-                <div className="selection-card-premium" onClick={() => setView('signup-business')}>
+                <div className="selection-card-premium" onClick={() => { setSignupType('BUSINESS'); setView('signup-business'); }}>
                   <div className="selection-icon-circle business">
                     <Briefcase size={32} />
                   </div>
@@ -2644,25 +2723,196 @@ function App() {
           )}
 
           {view === 'signup-business' && (
-            <form onSubmit={(e) => handleRegisterProfile(e, 'BUSINESS')} className="auth-step">
-              <div className="business-signup-grid">
-                <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business name</label></div>
-                <div className="input-group"><input type="text" name="businessType" value={formData.businessType} onChange={handleInputChange} required placeholder=" " /><label>Business Type</label></div>
-                <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} placeholder=" " /><label>Reg. Number</label></div>
-                <div className="input-group"><input type="text" name="username" value={formData.username} onChange={handleInputChange} required placeholder=" " /><label>Username (Admin)</label></div>
-                <div className="input-group"><input type="text" name="ownerFirstName" value={formData.ownerFirstName} onChange={handleInputChange} required placeholder=" " /><label>Owner First name</label></div>
-                <div className="input-group"><input type="text" name="ownerLastName" value={formData.ownerLastName} onChange={handleInputChange} required placeholder=" " /><label>Owner Last name</label></div>
-                <div className="input-group full-width">
-                  <input type="password" name="password" value={formData.password} onChange={handleInputChange} required placeholder=" " />
-                  <label>Password</label>
-                </div>
-                <div className="full-width">
-                  <PasswordRequirements password={formData.password} />
-                </div>
+            <form onSubmit={handleGoToMailSignup} className="auth-step">
+              <div className="name-grid">
+                <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First Name</label></div>
+                <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last Name</label></div>
+              </div>
+              <div className="signup-inputs-container">
+                <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business Name</label></div>
+                <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required placeholder=" " /><label>Business ID Number</label></div>
               </div>
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>Next</button>
+              </div>
+            </form>
+          )}
+
+          {view === 'signup-business-onboarding' && (
+            <form onSubmit={handleOnboardingSubmit} className="auth-step" style={{ maxWidth: '650px' }}>
+              <div className="onboarding-welcome" style={{ marginBottom: '24px', textAlign: 'center' }}>
+                <h2 style={{ fontSize: '22px', fontWeight: '800', color: 'var(--primary)', marginBottom: '8px' }}>Welcome, {formData.firstName}!</h2>
+                <p style={{ fontSize: '14px', color: '#64748b' }}>Please complete your Business Profile setup to unlock your dashboard.</p>
+              </div>
+
+              <div className="signup-inputs-container" style={{ maxHeight: '340px', overflowY: 'auto', paddingRight: '8px', paddingBottom: '8px' }}>
+                <span className="section-title" style={{ fontSize: '13px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '16px', display: 'block' }}>Business Information</span>
+                
+                <div className="input-group">
+                  <select
+                    name="businessType"
+                    value={onboardingData.businessType}
+                    onChange={(e) => setOnboardingData({ ...onboardingData, businessType: e.target.value })}
+                    required
+                    style={{ width: '100%', height: '52px', padding: '0 20px', border: '1.5px solid var(--border)', borderRadius: '16px', backgroundColor: 'var(--bg-input)', fontSize: '15px', color: 'var(--text-main)', outline: 'none' }}
+                  >
+                    <option value="Sole Proprietorship">Sole Proprietorship</option>
+                    <option value="Partnership">Partnership</option>
+                    <option value="Private Limited">Private Limited</option>
+                    <option value="LLP">LLP</option>
+                    <option value="Corporation">Corporation</option>
+                    <option value="Non-Profit">Non-Profit</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <label style={{ top: '-10px', left: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--primary)', background: '#fff', padding: '0 6px' }}>Business Type</label>
+                </div>
+
+                <div className="input-group">
+                  <input
+                    type="text"
+                    name="industry"
+                    value={onboardingData.industry}
+                    onChange={(e) => setOnboardingData({ ...onboardingData, industry: e.target.value })}
+                    required
+                    placeholder=" "
+                  />
+                  <label>Industry</label>
+                </div>
+
+                <div className="name-grid">
+                  <div className="input-group">
+                    <select
+                      name="companySize"
+                      value={onboardingData.companySize}
+                      onChange={(e) => setOnboardingData({ ...onboardingData, companySize: e.target.value })}
+                      style={{ width: '100%', height: '52px', padding: '0 20px', border: '1.5px solid var(--border)', borderRadius: '16px', backgroundColor: 'var(--bg-input)', fontSize: '15px', color: 'var(--text-main)', outline: 'none' }}
+                    >
+                      <option value="">Company Size (Optional)</option>
+                      <option value="1-10">1-10 employees</option>
+                      <option value="11-50">11-50 employees</option>
+                      <option value="51-200">51-200 employees</option>
+                      <option value="201-500">201-500 employees</option>
+                      <option value="500+">500+ employees</option>
+                    </select>
+                    {onboardingData.companySize && (
+                      <label style={{ top: '-10px', left: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--primary)', background: '#fff', padding: '0 6px' }}>Company Size</label>
+                    )}
+                  </div>
+                  
+                  <div className="input-group">
+                    <input
+                      type="text"
+                      name="businessWebsite"
+                      value={onboardingData.businessWebsite}
+                      onChange={(e) => setOnboardingData({ ...onboardingData, businessWebsite: e.target.value })}
+                      placeholder=" "
+                    />
+                    <label>Website (Optional)</label>
+                  </div>
+                </div>
+
+                <div className="input-group">
+                  <input
+                    type="text"
+                    name="businessAddress"
+                    value={onboardingData.businessAddress}
+                    onChange={(e) => setOnboardingData({ ...onboardingData, businessAddress: e.target.value })}
+                    placeholder=" "
+                  />
+                  <label>Business Address (Optional)</label>
+                </div>
+
+                <span className="section-title" style={{ fontSize: '13px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', marginTop: '16px', marginBottom: '16px', display: 'block' }}>Branding & Preferences</span>
+
+                <div className="name-grid" style={{ marginBottom: '24px' }}>
+                  <div className="file-upload-box" style={{ border: '1.5px dashed var(--border)', borderRadius: '16px', padding: '16px', textAlign: 'center', position: 'relative', minHeight: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    {onboardingData.profilePhoto ? (
+                      <div style={{ position: 'relative', width: '80px', height: '80px' }}>
+                        <img src={onboardingData.profilePhoto} alt="Profile" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover' }} />
+                        <button type="button" onClick={() => setOnboardingData({ ...onboardingData, profilePhoto: null })} style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>✕</button>
+                      </div>
+                    ) : (
+                      <>
+                        <User size={24} style={{ color: '#64748b', marginBottom: '6px' }} />
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b' }}>Profile Photo</span>
+                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'profilePhoto')} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                      </>
+                    )}
+                  </div>
+
+                  <div className="file-upload-box" style={{ border: '1.5px dashed var(--border)', borderRadius: '16px', padding: '16px', textAlign: 'center', position: 'relative', minHeight: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    {onboardingData.companyLogo ? (
+                      <div style={{ position: 'relative', width: '80px', height: '80px' }}>
+                        <img src={onboardingData.companyLogo} alt="Logo" style={{ width: '80px', height: '80px', borderRadius: '8px', objectFit: 'cover' }} />
+                        <button type="button" onClick={() => setOnboardingData({ ...onboardingData, companyLogo: null })} style={{ position: 'absolute', top: '-6px', right: '-6px', background: 'var(--danger)', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>✕</button>
+                      </div>
+                    ) : (
+                      <>
+                        <Briefcase size={24} style={{ color: '#64748b', marginBottom: '6px' }} />
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b' }}>Company Logo</span>
+                        <input type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'companyLogo')} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="name-grid">
+                  <div className="input-group">
+                    <select
+                      name="timeZone"
+                      value={onboardingData.timeZone}
+                      onChange={(e) => setOnboardingData({ ...onboardingData, timeZone: e.target.value })}
+                      required
+                      style={{ width: '100%', height: '52px', padding: '0 20px', border: '1.5px solid var(--border)', borderRadius: '16px', backgroundColor: 'var(--bg-input)', fontSize: '15px', color: 'var(--text-main)', outline: 'none' }}
+                    >
+                      <option value="UTC">UTC / GMT</option>
+                      <option value="EST">EST (UTC-5)</option>
+                      <option value="PST">PST (UTC-8)</option>
+                      <option value="IST">IST (UTC+5:30)</option>
+                      <option value="BST">BST (UTC+1)</option>
+                      <option value="AEST">AEST (UTC+10)</option>
+                    </select>
+                    <label style={{ top: '-10px', left: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--primary)', background: '#fff', padding: '0 6px' }}>Time Zone</label>
+                  </div>
+
+                  <div className="input-group">
+                    <select
+                      name="language"
+                      value={onboardingData.language}
+                      onChange={(e) => setOnboardingData({ ...onboardingData, language: e.target.value })}
+                      required
+                      style={{ width: '100%', height: '52px', padding: '0 20px', border: '1.5px solid var(--border)', borderRadius: '16px', backgroundColor: 'var(--bg-input)', fontSize: '15px', color: 'var(--text-main)', outline: 'none' }}
+                    >
+                      <option value="English (US)">English (US)</option>
+                      <option value="English (UK)">English (UK)</option>
+                      <option value="Español">Español</option>
+                      <option value="Français">Français</option>
+                      <option value="Deutsch">Deutsch</option>
+                      <option value="हिन्दी">हिन्दी</option>
+                    </select>
+                    <label style={{ top: '-10px', left: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--primary)', background: '#fff', padding: '0 6px' }}>Language</label>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '16px', paddingLeft: '4px' }}>
+                  <input
+                    type="checkbox"
+                    id="acceptTerms"
+                    checked={onboardingData.acceptTerms}
+                    onChange={(e) => setOnboardingData({ ...onboardingData, acceptTerms: e.target.checked })}
+                    required
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                  />
+                  <label htmlFor="acceptTerms" style={{ fontSize: '13px', color: '#475569', cursor: 'pointer', userSelect: 'none' }}>
+                    I accept the <a href="#" onClick={(e) => { e.preventDefault(); showLegalPage('terms'); }} style={{ color: 'var(--primary)', fontWeight: '600' }}>Terms of Service</a> & <a href="#" onClick={(e) => { e.preventDefault(); showLegalPage('privacy'); }} style={{ color: 'var(--primary)', fontWeight: '600' }}>Privacy Policy</a>
+                  </label>
+                </div>
+              </div>
+
+              <div className="auth-actions" style={{ marginTop: '24px' }}>
+                <button type="button" className="text-btn" onClick={handleLogout}>Log Out</button>
+                <button type="submit" className="primary-btn" disabled={loading}>Submit & Continue</button>
               </div>
             </form>
           )}
@@ -2836,7 +3086,11 @@ function App() {
                 </div>
               </div>
               <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView(signupType === 'CHILD' ? 'signup-parent-verify' : 'signup-profile')}>Back</button>
+                <button type="button" className="text-btn" onClick={() => {
+                  if (signupType === 'CHILD') setView('signup-parent-verify');
+                  else if (signupType === 'BUSINESS') setView('signup-business');
+                  else setView('signup-profile');
+                }}>Back</button>
                 <button type="submit" className="primary-btn" disabled={loading}>
                   {tempToken ? (loading ? 'Creating...' : 'Create Email') : 'Next'}
                 </button>
