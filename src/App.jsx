@@ -2341,7 +2341,9 @@ function App() {
           <div className="beta-logo-container">
             <img src={betaLogo} alt="B2Auth" className="beta-logo-img" />
           </div>
-          {view.startsWith('signup') ? (
+          {view === 'signup-business-onboarding' ? (
+            <h1 className="sign-in-to">Business Profile</h1>
+          ) : view.startsWith('signup') ? (
             <h1 className="sign-in-to">Create Account</h1>
           ) : view.startsWith('forgot-password') ? (
             <h1 className="sign-in-to">Account Recovery</h1>
@@ -2351,7 +2353,8 @@ function App() {
             <h1 className="sign-in-to">Sign in to B2Auth</h1>
           )}
           <p className="use-account">
-            {view === 'signup-selection' ? 'Choose your account type' :
+            {view === 'signup-business-onboarding' ? 'Complete your business profile details' :
+             view === 'signup-selection' ? 'Choose your account type' :
              view === 'signup-profile' ? 'Enter your profile details' :
              view === 'signup-child' ? 'Enter child\'s profile details' :
              view === 'signup-parent-verify' ? 'Parent verification details' :
@@ -2746,8 +2749,8 @@ function App() {
                 <p style={{ fontSize: '14px', color: '#64748b' }}>Please complete your Business Profile setup to unlock your dashboard.</p>
               </div>
 
-              <div className="signup-inputs-container" style={{ maxHeight: '340px', overflowY: 'auto', paddingRight: '8px', paddingBottom: '8px' }}>
-                <span className="section-title" style={{ fontSize: '13px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', marginBottom: '16px', display: 'block' }}>Business Information</span>
+              <div className="signup-inputs-container" style={{ maxHeight: '460px', overflowY: 'auto', paddingRight: '8px', paddingBottom: '8px' }}>
+                <span className="onboarding-section-title">Business Information</span>
                 
                 <div className="input-group">
                   <select
@@ -2755,7 +2758,6 @@ function App() {
                     value={onboardingData.businessType}
                     onChange={(e) => setOnboardingData({ ...onboardingData, businessType: e.target.value })}
                     required
-                    style={{ width: '100%', height: '52px', padding: '0 20px', border: '1.5px solid var(--border)', borderRadius: '16px', backgroundColor: 'var(--bg-input)', fontSize: '15px', color: 'var(--text-main)', outline: 'none' }}
                   >
                     <option value="Sole Proprietorship">Sole Proprietorship</option>
                     <option value="Partnership">Partnership</option>
@@ -2765,7 +2767,7 @@ function App() {
                     <option value="Non-Profit">Non-Profit</option>
                     <option value="Other">Other</option>
                   </select>
-                  <label style={{ top: '-10px', left: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--primary)', background: '#fff', padding: '0 6px' }}>Business Type</label>
+                  <label className="floating-select-label">Business Type</label>
                 </div>
 
                 <div className="input-group">
@@ -2786,7 +2788,6 @@ function App() {
                       name="companySize"
                       value={onboardingData.companySize}
                       onChange={(e) => setOnboardingData({ ...onboardingData, companySize: e.target.value })}
-                      style={{ width: '100%', height: '52px', padding: '0 20px', border: '1.5px solid var(--border)', borderRadius: '16px', backgroundColor: 'var(--bg-input)', fontSize: '15px', color: 'var(--text-main)', outline: 'none' }}
                     >
                       <option value="">Company Size (Optional)</option>
                       <option value="1-10">1-10 employees</option>
@@ -2796,7 +2797,7 @@ function App() {
                       <option value="500+">500+ employees</option>
                     </select>
                     {onboardingData.companySize && (
-                      <label style={{ top: '-10px', left: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--primary)', background: '#fff', padding: '0 6px' }}>Company Size</label>
+                      <label className="floating-select-label">Company Size</label>
                     )}
                   </div>
                   
@@ -2823,7 +2824,7 @@ function App() {
                   <label>Business Address (Optional)</label>
                 </div>
 
-                <span className="section-title" style={{ fontSize: '13px', fontWeight: '700', color: 'var(--primary)', textTransform: 'uppercase', marginTop: '16px', marginBottom: '16px', display: 'block' }}>Branding & Preferences</span>
+                <span className="onboarding-section-title">Branding & Preferences</span>
 
                 <div className="name-grid" style={{ marginBottom: '24px' }}>
                   <div className="file-upload-box" style={{ border: '1.5px dashed var(--border)', borderRadius: '16px', padding: '16px', textAlign: 'center', position: 'relative', minHeight: '120px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -2864,7 +2865,6 @@ function App() {
                       value={onboardingData.timeZone}
                       onChange={(e) => setOnboardingData({ ...onboardingData, timeZone: e.target.value })}
                       required
-                      style={{ width: '100%', height: '52px', padding: '0 20px', border: '1.5px solid var(--border)', borderRadius: '16px', backgroundColor: 'var(--bg-input)', fontSize: '15px', color: 'var(--text-main)', outline: 'none' }}
                     >
                       <option value="UTC">UTC / GMT</option>
                       <option value="EST">EST (UTC-5)</option>
@@ -2873,7 +2873,7 @@ function App() {
                       <option value="BST">BST (UTC+1)</option>
                       <option value="AEST">AEST (UTC+10)</option>
                     </select>
-                    <label style={{ top: '-10px', left: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--primary)', background: '#fff', padding: '0 6px' }}>Time Zone</label>
+                    <label className="floating-select-label">Time Zone</label>
                   </div>
 
                   <div className="input-group">
@@ -2882,7 +2882,6 @@ function App() {
                       value={onboardingData.language}
                       onChange={(e) => setOnboardingData({ ...onboardingData, language: e.target.value })}
                       required
-                      style={{ width: '100%', height: '52px', padding: '0 20px', border: '1.5px solid var(--border)', borderRadius: '16px', backgroundColor: 'var(--bg-input)', fontSize: '15px', color: 'var(--text-main)', outline: 'none' }}
                     >
                       <option value="English (US)">English (US)</option>
                       <option value="English (UK)">English (UK)</option>
@@ -2891,7 +2890,7 @@ function App() {
                       <option value="Deutsch">Deutsch</option>
                       <option value="हिन्दी">हिन्दी</option>
                     </select>
-                    <label style={{ top: '-10px', left: '14px', fontSize: '12px', fontWeight: '700', color: 'var(--primary)', background: '#fff', padding: '0 6px' }}>Language</label>
+                    <label className="floating-select-label">Language</label>
                   </div>
                 </div>
 
