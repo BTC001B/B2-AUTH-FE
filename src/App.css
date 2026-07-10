@@ -602,7 +602,6 @@ body {
   pointer-events: none;
   transition: all 0.3s ease;
   font-size: 15px;
-  margin-top: 8px;
 }
 
 .input-group input:focus ~ label,
@@ -2811,6 +2810,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  margin-bottom: 8px;
 }
 
 .business-signup-grid {
