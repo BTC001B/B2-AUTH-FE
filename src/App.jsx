@@ -3179,9 +3179,9 @@ function App() {
                           setError('');
                         }}
                         placeholder="Choose your handle"
-                        style={{ flexGrow: 1, paddingRight: '120px', width: '100%', boxSizing: 'border-box' }}
+                        className="custom-handle-input"
                       />
-                      <span className="domain-suffix" style={{ position: 'absolute', right: '16px', color: '#64748b', fontSize: '14px', fontWeight: '500', pointerEvents: 'none' }}>@bnxmail.com</span>
+                      <span className="domain-suffix">@bnxmail.com</span>
                     </div>
                   </div>
                 </div>

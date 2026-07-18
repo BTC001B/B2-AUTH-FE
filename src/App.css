@@ -211,6 +211,39 @@ body {
   animation: fadeIn 0.3s ease;
 }
 
+.domain-suffix {
+  position: absolute;
+  right: 16px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.custom-handle-input {
+  flex-grow: 1;
+  padding-right: 120px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: padding-right 0.3s ease;
+}
+
+@media (max-width: 480px) {
+  .login-input-wrapper.has-domain-hint input {
+    padding-right: 16px !important;
+  }
+  .domain-hint {
+    display: none !important;
+  }
+  .custom-handle-input {
+    padding-right: 16px !important;
+  }
+  .domain-suffix {
+    display: none !important;
+  }
+}
+
 /* Create Mailbox View Styles */
 .input-group-mail {
   position: relative;
