@@ -230,17 +230,9 @@ body {
 }
 
 @media (max-width: 480px) {
-  .login-input-wrapper.has-domain-hint input {
-    padding-right: 16px !important;
-  }
-  .domain-hint {
-    display: none !important;
-  }
-  .custom-handle-input {
-    padding-right: 16px !important;
-  }
-  .domain-suffix {
-    display: none !important;
+  .login-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
