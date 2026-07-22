@@ -609,6 +609,26 @@ function App() {
     }
   };
 
+  const handleRevokeExternalSession = async (sessionId) => {
+    if (!window.confirm("Are you sure you want to remove access for this application?")) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await axios.delete(`${API_BASE}/auth/sessions/external/${sessionId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.data.success) {
+        fetchExternalSessions(accessToken);
+        showAlert("Application access revoked successfully");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to revoke application access');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleMakePrimary = async (emailId) => {
     setLoading(true);
     try {
@@ -937,17 +957,45 @@ function App() {
   };
 
   const parseUserAgent = (ua) => {
-    if (!ua) return { name: 'Unknown Device', type: 'monitor' };
+    if (!ua) return { name: 'Unknown Device', browser: 'Browser', type: 'monitor' };
     const lowerUA = ua.toLowerCase();
 
-    if (lowerUA.includes('iphone')) return { name: 'iPhone', type: 'phone' };
-    if (lowerUA.includes('android')) return { name: 'Android Phone', type: 'phone' };
-    if (lowerUA.includes('ipad')) return { name: 'iPad', type: 'tablet' };
-    if (lowerUA.includes('macintosh')) return { name: 'MacBook', type: 'monitor' };
-    if (lowerUA.includes('windows')) return { name: 'Windows PC', type: 'monitor' };
-    if (lowerUA.includes('linux')) return { name: 'Linux PC', type: 'monitor' };
+    let name = 'Unknown Device';
+    let type = 'monitor';
+    if (lowerUA.includes('iphone')) {
+      name = 'iPhone';
+      type = 'phone';
+    } else if (lowerUA.includes('android')) {
+      name = 'Android Phone';
+      type = 'phone';
+    } else if (lowerUA.includes('ipad')) {
+      name = 'iPad';
+      type = 'tablet';
+    } else if (lowerUA.includes('macintosh')) {
+      name = 'MacBook';
+      type = 'monitor';
+    } else if (lowerUA.includes('windows')) {
+      name = 'Windows PC';
+      type = 'monitor';
+    } else if (lowerUA.includes('linux')) {
+      name = 'Linux PC';
+      type = 'monitor';
+    }
 
-    return { name: ua.split('/')[0] || 'Web Browser', type: 'monitor' };
+    let browser = 'Web Browser';
+    if (lowerUA.includes('firefox')) {
+      browser = 'Firefox';
+    } else if (lowerUA.includes('opr/') || lowerUA.includes('opera')) {
+      browser = 'Opera';
+    } else if (lowerUA.includes('edg/')) {
+      browser = 'Edge';
+    } else if (lowerUA.includes('chrome')) {
+      browser = 'Chrome';
+    } else if (lowerUA.includes('safari') && !lowerUA.includes('chrome')) {
+      browser = 'Safari';
+    }
+
+    return { name, browser, type };
   };
 
   const normalizeIdentifier = (id) => {
@@ -2182,7 +2230,7 @@ function App() {
                                 {device.name}
                                 {session.isCurrentSession && <span className="current-badge-mini">This device</span>}
                               </div>
-                              <div className="identity-sub">{session.ipAddress} • {session.userAgent?.split(' ')[0] || 'Browser'}</div>
+                              <div className="identity-sub">{session.ipAddress} • {device.browser}</div>
                             </div>
                             <div className="identity-trailing">
                               {!session.isCurrentSession && (
@@ -2209,7 +2257,7 @@ function App() {
                             <div className="identity-sub">Has access to basic profile info</div>
                           </div>
                           <div className="identity-trailing">
-                            <button className="row-action-btn">Remove access</button>
+                            <button className="row-action-btn danger" onClick={() => handleRevokeExternalSession(session.id)}>Remove access</button>
                           </div>
                         </div>
                       )) : (
