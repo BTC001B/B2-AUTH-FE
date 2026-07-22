@@ -280,7 +280,20 @@ function App() {
     acceptTerms: false
   });
   const [onboardingStep, setOnboardingStep] = useState(1);
+  const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'success' });
   const topbarRightRef = useRef(null);
+
+  const showAlert = (message, type = 'success') => {
+    setCustomAlert({ show: true, message, type });
+    setTimeout(() => {
+      setCustomAlert(prev => {
+        if (prev.message === message) {
+          return { show: false, message: '', type: 'success' };
+        }
+        return prev;
+      });
+    }, 3500);
+  };
 
   const showLegalPage = (documentKey) => {
     const path = documentKey === 'privacy' ? '/privacy-policy' : '/terms-and-conditions';
@@ -649,7 +662,7 @@ function App() {
       });
       if (res.data.success) {
         fetchAuthenticatorAccounts(accessToken);
-        alert("Authenticator account deleted successfully");
+        showAlert("Authenticator account deleted successfully");
       }
     } catch (err) {
       setError(err.response?.data?.message || "Failed to delete authenticator account");
@@ -738,7 +751,7 @@ function App() {
         setProfileData(prev => prev ? ({ ...prev, twoFactorEnabled: true }) : prev);
         setSettingsData(prev => prev ? ({ ...prev, twoFactorEnabled: true }) : prev);
         fetchAuthenticatorAccounts(accessToken);
-        alert("2-Step Verification has been enabled.");
+        showAlert("2-Step Verification has been enabled.");
       }
     } catch (err) {
       // If no setup found, redirect to account manager
@@ -761,7 +774,7 @@ function App() {
         setProfileData(prev => prev ? ({ ...prev, twoFactorEnabled: false }) : prev);
         setSettingsData(prev => prev ? ({ ...prev, twoFactorEnabled: false }) : prev);
         fetchAuthenticatorAccounts(accessToken);
-        alert("2-Step Verification has been disabled.");
+        showAlert("2-Step Verification has been disabled.");
       }
     } catch (err) {
       setError("Failed to disable 2-Step Verification");
@@ -782,7 +795,7 @@ function App() {
       });
       setShowChangePasswordModal(false);
       setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
-      alert("Password changed successfully");
+      showAlert("Password changed successfully");
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to change password');
     } finally {
@@ -1564,7 +1577,7 @@ function App() {
       const res = await axios.post(`${API_BASE}/auth/reset-password`, { identifier: normalizedEmail, otp: formData.otp, newPassword: formData.newPassword });
       if (res.data.success) {
         setView('login-password');
-        alert('Password reset successfully.');
+        showAlert('Password reset successfully.');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reset password');
@@ -3385,6 +3398,16 @@ function App() {
           {/* <div className="footer-right"><span>Help</span><span>Privacy</span><span>Terms</span></div> */}
         </div>
       </div>
+      {customAlert.show && (
+        <div className={`custom-toast-alert ${customAlert.type}`}>
+          {customAlert.type === 'success' ? (
+            <CheckCircle size={20} style={{ color: '#22c55e', flexShrink: 0 }} />
+          ) : (
+            <AlertCircle size={20} style={{ color: '#ef4444', flexShrink: 0 }} />
+          )}
+          <span style={{ fontSize: '14px', fontWeight: '600' }}>{customAlert.message}</span>
+        </div>
+      )}
     </div>
   );
 }
