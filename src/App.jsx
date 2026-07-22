@@ -637,6 +637,27 @@ function App() {
     }
   };
 
+  const handleDeleteAuthenticatorAccount = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this authenticator account?")) {
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.delete(`${API_BASE}/users/2fa/accounts/${id}`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      if (res.data.success) {
+        fetchAuthenticatorAccounts(accessToken);
+        alert("Authenticator account deleted successfully");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to delete authenticator account");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let scanner = null;
     if (showAddAuthModal && addAuthMode === 'scan') {
