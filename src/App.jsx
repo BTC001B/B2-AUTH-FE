@@ -1354,6 +1354,22 @@ function App() {
       return;
     }
 
+    if (signupType === 'PERSONAL' || signupType === 'CHILD') {
+      const username = formData.username.trim();
+      if (username.length !== 10) {
+        setError('Email handle must be exactly 10 characters long.');
+        setView('signup-mail');
+        return;
+      }
+      const digits = (username.match(/\d/g) || []).length;
+      const letters = (username.match(/[a-z]/i) || []).length;
+      if (digits !== 3 || letters !== 7) {
+        setError('Email handle must contain exactly 7 letters and 3 numbers.');
+        setView('signup-mail');
+        return;
+      }
+    }
+
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return;
@@ -1417,6 +1433,20 @@ function App() {
     if (!formData.username || !formData.username.trim()) {
       setError('Please select a suggested email handle or type one');
       return;
+    }
+
+    if (signupType === 'PERSONAL' || signupType === 'CHILD') {
+      const username = formData.username.trim();
+      if (username.length !== 10) {
+        setError('Email handle must be exactly 10 characters long.');
+        return;
+      }
+      const digits = (username.match(/\d/g) || []).length;
+      const letters = (username.match(/[a-z]/i) || []).length;
+      if (digits !== 3 || letters !== 7) {
+        setError('Email handle must contain exactly 7 letters and 3 numbers.');
+        return;
+      }
     }
 
     if (tempToken) {
