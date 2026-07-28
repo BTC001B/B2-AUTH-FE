@@ -1362,7 +1362,7 @@ function App() {
         return;
       }
       const digits = (username.match(/\d/g) || []).length;
-      const letters = (username.match(/[a-z]/i) || []).length;
+      const letters = (username.match(/[a-zA-Z]/g) || []).length;
       console.log({
           username,
           letters,
