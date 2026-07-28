@@ -1356,8 +1356,8 @@ function App() {
 
     if (signupType === 'PERSONAL' || signupType === 'CHILD') {
       const username = formData.username.trim();
-      if (username.length !== 10) {
-        setError('Email handle must be exactly 10 characters long.');
+      if (username.length < 10) {
+        setError('Email handle must be atleast 10 characters long.');
         setView('signup-mail');
         return;
       }
