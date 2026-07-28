@@ -1363,6 +1363,12 @@ function App() {
       }
       const digits = (username.match(/\d/g) || []).length;
       const letters = (username.match(/[a-z]/i) || []).length;
+      console.log({
+          username,
+          letters,
+          digits,
+          length: username.length
+      });
       if (digits < 3 || letters < 7) {
         setError('Email handle must be at least 7 letters and 3 numbers.');
         setView('signup-mail');
