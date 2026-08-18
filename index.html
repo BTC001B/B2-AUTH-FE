@@ -2,9 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="icon" type="image/svg+xml" href="/b2auth.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>B2Auth</title>
+    <script>
+      window.addEventListener('error', function(e) {
+        // Automatically reload the page if a chunk or module fails to load (due to new deployment)
+        if (e.target && e.target.nodeName === 'SCRIPT' && e.target.type === 'module') {
+          console.warn('Module script load failed. Reloading window to fetch new chunks...');
+          window.location.reload();
+        }
+      }, true);
+    </script>
   </head>
   <body>
     <div id="root"></div>
