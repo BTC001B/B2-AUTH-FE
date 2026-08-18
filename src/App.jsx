@@ -1927,11 +1927,6 @@ function App() {
               <img src={authLogo} alt="B2Auth" className="navbar-logo-img" />
               <span className="brand-text">B2Auth</span>
             </div>
-            <h1 className="tab-title">
-              {dashboardTab === 'emails' ? 'Dashboard' :
-                dashboardTab === 'sessions' ? 'Security' :
-                  dashboardTab === 'apps' ? 'Connected Apps' : 'Settings'}
-            </h1>
           </div>
 
           <div className="topbar-right" ref={topbarRightRef}>
