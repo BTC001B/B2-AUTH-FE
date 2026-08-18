@@ -2787,7 +2787,8 @@ body {
 .icon-action-btn {
   background: none;
   border: none;
-  color: #5f6368;
+  /* color: #5f6368; */
+  color: #d93025;
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
