@@ -2181,8 +2181,19 @@ body {
   border: 1px solid var(--border);
   border-radius: 20px;
   background: #ffffff;
-  overflow: hidden;
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: var(--shadow-md);
+}
+
+.account-list-premium::-webkit-scrollbar {
+  width: 6px;
+}
+
+.account-list-premium::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
 }
 
 .account-item-card {
