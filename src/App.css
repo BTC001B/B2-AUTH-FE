@@ -88,6 +88,8 @@ body {
 .beta-logo-container {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 16px;
   margin-bottom: 12px;
 }
 

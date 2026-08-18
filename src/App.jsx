@@ -2622,8 +2622,9 @@ function App() {
         <div className="auth-header">
           {error && <div className="error-message-top">{error}</div>}
           <div className="beta-logo-container">
+            <img src={betaLogo} alt="BETA" className="beta-logo-img" />
             {(() => {
-              let displayLogo = betaLogo;
+              let displayLogo = null;
               if (redirectUri.includes('cliksbusiness')) {
                 displayLogo = cliksBusinessLogo;
               } else if (redirectUri.includes('cliks.beta-softnet.com')) {
@@ -2631,7 +2632,15 @@ function App() {
               } else if (redirectUri.includes('bit-tool.com')) {
                 displayLogo = bitToolLogo;
               }
-              return <img src={displayLogo} alt="B2Auth" className="beta-logo-img" />;
+              if (displayLogo) {
+                return (
+                  <>
+                    <X size={16} color="#9aa0a6" />
+                    <img src={displayLogo} alt="App" className="beta-logo-img" style={{ height: '45px' }} />
+                  </>
+                );
+              }
+              return null;
             })()}
           </div>
           {view === 'signup-business-onboarding' ? (
