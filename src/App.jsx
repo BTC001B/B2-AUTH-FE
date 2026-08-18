@@ -2299,7 +2299,9 @@ function App() {
                           </div>
                           <div className="identity-info">
                             <div className="identity-label">{session.appName}</div>
-                            <div className="identity-sub">Has access to basic profile info</div>
+                            <div className="identity-sub">
+                              {session.location || session.ipAddress} • Authorized {new Date(session.loggedInAt).toLocaleDateString()}
+                            </div>
                           </div>
                           <div className="identity-trailing">
                             <button className="row-action-btn danger" onClick={() => handleRevokeExternalSession(session.id)}>Remove access</button>
