@@ -2247,7 +2247,7 @@ function App() {
                             <AuthenticatorCode secret={acc.secretKey} />
                           </div>
                           <div className="identity-trailing">
-                            <button className="icon-action-btn" onClick={() => handleDeleteAuthenticatorAccount(acc.id)}><Trash2 size={14} /></button>
+                            <button style={{color:"red"}} className="icon-action-btn" onClick={() => handleDeleteAuthenticatorAccount(acc.id)}><Trash2 size={14} /></button>
                           </div>
                         </div>
                       )) : (
