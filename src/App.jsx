@@ -15,6 +15,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import betaLogo from './assets/beta2.png';
 import authLogo from './assets/auth2.png';
+import cliksBusinessLogo from './assets/cliks-business.png';
+import cliksLogo from './assets/cliks.png';
+import bitToolLogo from './assets/BIT-TOOL-2.png';
 import * as OTPAuth from 'otpauth';
 import { QRCodeSVG } from 'qrcode.react';
 import { Html5QrcodeScanner } from "html5-qrcode";
@@ -2619,7 +2622,17 @@ function App() {
         <div className="auth-header">
           {error && <div className="error-message-top">{error}</div>}
           <div className="beta-logo-container">
-            <img src={betaLogo} alt="B2Auth" className="beta-logo-img" />
+            {(() => {
+              let displayLogo = betaLogo;
+              if (redirectUri.includes('cliksbusiness')) {
+                displayLogo = cliksBusinessLogo;
+              } else if (redirectUri.includes('cliks.beta-softnet.com')) {
+                displayLogo = cliksLogo;
+              } else if (redirectUri.includes('bit-tool.com')) {
+                displayLogo = bitToolLogo;
+              }
+              return <img src={displayLogo} alt="B2Auth" className="beta-logo-img" />;
+            })()}
           </div>
           {view === 'signup-business-onboarding' ? (
             <h1 className="sign-in-to">Business Profile</h1>
