@@ -1802,11 +1802,17 @@ function App() {
   if (view === 'profile-details') {
     return (
       <div className="dashboard-container">
-        <aside className="dashboard-sidebar">
-          <div className="sidebar-brand">
-            <img src={authLogo} alt="B2Auth" className="sidebar-logo-img" />
-            <span className="brand-text">B2Auth</span>
+        <header className="dashboard-topbar">
+          <div className="topbar-left">
+            <div className="navbar-brand">
+              <img src={authLogo} alt="B2Auth" className="navbar-logo-img" />
+              <span className="brand-text">B2Auth</span>
+            </div>
           </div>
+          <div className="topbar-right"></div>
+        </header>
+
+        <aside className="dashboard-sidebar">
           <nav className="sidebar-nav">
             <button className="sidebar-item" onClick={() => setView('dashboard')}>
               <div className="icon-box"><ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} /></div>
@@ -1917,6 +1923,10 @@ function App() {
         {/* Top Navigation / Account Switcher */}
         <header className="dashboard-topbar">
           <div className="topbar-left">
+            <div className="navbar-brand">
+              <img src={authLogo} alt="B2Auth" className="navbar-logo-img" />
+              <span className="brand-text">B2Auth</span>
+            </div>
             <h1 className="tab-title">
               {dashboardTab === 'emails' ? 'Dashboard' :
                 dashboardTab === 'sessions' ? 'Security' :
@@ -1992,11 +2002,6 @@ function App() {
         </header>
 
         <aside className="dashboard-sidebar">
-          <div className="sidebar-brand">
-            <img src={authLogo} alt="B2Auth" className="sidebar-logo-img" />
-            <span className="brand-text">B2Auth</span>
-          </div>
-
           <nav className="sidebar-nav">
             <button
               className={`sidebar-item ${dashboardTab === 'emails' ? 'active' : ''}`}
@@ -2622,9 +2627,8 @@ function App() {
         <div className="auth-header">
           {error && <div className="error-message-top">{error}</div>}
           <div className="beta-logo-container">
-            <img src={betaLogo} alt="BETA" className="beta-logo-img" />
             {(() => {
-              let displayLogo = null;
+              let displayLogo = betaLogo;
               if (redirectUri.includes('cliksbusiness')) {
                 displayLogo = cliksBusinessLogo;
               } else if (redirectUri.includes('cliks.beta-softnet.com')) {
@@ -2632,15 +2636,7 @@ function App() {
               } else if (redirectUri.includes('bit-tool.com')) {
                 displayLogo = bitToolLogo;
               }
-              if (displayLogo) {
-                return (
-                  <>
-                    <X size={16} color="#9aa0a6" />
-                    <img src={displayLogo} alt="App" className="beta-logo-img" style={{ height: '45px' }} />
-                  </>
-                );
-              }
-              return null;
+              return <img src={displayLogo} alt="B2Auth" className="beta-logo-img" />;
             })()}
           </div>
           {view === 'signup-business-onboarding' ? (
