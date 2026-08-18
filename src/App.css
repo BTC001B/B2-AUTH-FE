@@ -2259,14 +2259,14 @@ body {
   margin-right: 12px;
   background: none;
   border: none;
-  color: var(--border);
+  color: #5f6368; /* Make it visible by default */
   cursor: pointer;
   border-radius: 50%;
   transition: all 0.2s;
 }
 
 .remove-account-btn:hover {
-  color: var(--danger);
+  color: #d93025;
   background: #fef2f2;
 }
 
