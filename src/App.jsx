@@ -1931,6 +1931,35 @@ function App() {
             </div>
           </div>
 
+          <div className="topbar-center">
+            <div className="navbar-pill-container">
+              <button
+                className={`navbar-pill-item ${dashboardTab === 'emails' ? 'active' : ''}`}
+                onClick={() => setDashboardTab('emails')}
+              >
+                Dashboard
+              </button>
+              <button
+                className={`navbar-pill-item ${dashboardTab === 'security' ? 'active' : ''}`}
+                onClick={() => {
+                  setDashboardTab('security');
+                  fetchFullProfile(accessToken);
+                  fetchAuthenticatorAccounts(accessToken);
+                  fetchSessions(accessToken);
+                  fetchExternalSessions(accessToken);
+                }}
+              >
+                Security
+              </button>
+              <button
+                className={`navbar-pill-item ${dashboardTab === 'settings' ? 'active' : ''}`}
+                onClick={() => setDashboardTab('settings')}
+              >
+                Settings
+              </button>
+            </div>
+          </div>
+
           <div className="topbar-right" ref={topbarRightRef}>
             <div className="account-switcher-container">
               <button

@@ -720,6 +720,46 @@ body {
   gap: 32px;
 }
 
+.topbar-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.navbar-pill-container {
+  display: flex;
+  align-items: center;
+  background-color: #f1f3f4;
+  border-radius: 24px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.navbar-pill-item {
+  background: transparent;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #5f6368;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navbar-pill-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: #202124;
+}
+
+.navbar-pill-item.active {
+  background-color: #fff;
+  color: #1a73e8;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
 .navbar-brand {
   display: flex;
   align-items: center;
