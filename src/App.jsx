@@ -250,6 +250,7 @@ function App() {
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [externalSessions, setExternalSessions] = useState([]);
+  const [expandedExternalSessionId, setExpandedExternalSessionId] = useState(null);
   const [accounts, setAccounts] = useState(() => JSON.parse(localStorage.getItem('bnx_accounts') || '[]'));
   const [showAccountSwitcher, setShowAccountSwitcher] = useState(false);
   const [useSavedAccount, setUseSavedAccount] = useState(!!localStorage.getItem('bnx_last_identifier'));
@@ -2293,19 +2294,41 @@ function App() {
                     <h3 className="identity-group-title"><Globe size={14} /> Third-party apps with account access</h3>
                     <div className="identity-container scrollable-identity-container">
                       {externalSessions.length > 0 ? externalSessions.map(session => (
-                        <div key={session.id} className="identity-row">
-                          <div className="identity-leading">
-                            <div className="identity-icon-box"><Globe size={18} /></div>
-                          </div>
-                          <div className="identity-info">
-                            <div className="identity-label">{session.appName}</div>
-                            <div className="identity-sub">
-                              {session.location || session.ipAddress} • Authorized {new Date(session.loggedInAt).toLocaleDateString()}
+                        <div key={session.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                          <div 
+                            className="identity-row" 
+                            onClick={() => setExpandedExternalSessionId(expandedExternalSessionId === session.id ? null : session.id)} 
+                            style={{ cursor: 'pointer', borderBottom: 'none' }}
+                          >
+                            <div className="identity-leading">
+                              <div className="identity-icon-box">
+                                {session.appName?.toLowerCase().includes('cliks business') ? (
+                                  <img src={cliksBusinessLogo} alt="Cliks Business" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                                ) : session.appName?.toLowerCase().includes('cliks') ? (
+                                  <img src={cliksLogo} alt="Cliks" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                                ) : session.appName?.toLowerCase().includes('bit tool') || session.appName?.toLowerCase().includes('bit-tool') ? (
+                                  <img src={bitToolLogo} alt="Bit Tool" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />
+                                ) : (
+                                  <Globe size={18} />
+                                )}
+                              </div>
+                            </div>
+                            <div className="identity-info">
+                              <div className="identity-label">{session.appName}</div>
+                              <div className="identity-sub">
+                                {session.ipAddress} • Authorized {new Date(session.loggedInAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <div className="identity-trailing">
+                              <button className="row-action-btn danger" onClick={(e) => { e.stopPropagation(); handleRevokeExternalSession(session.id); }}>Remove access</button>
                             </div>
                           </div>
-                          <div className="identity-trailing">
-                            <button className="row-action-btn danger" onClick={() => handleRevokeExternalSession(session.id)}>Remove access</button>
-                          </div>
+                          {expandedExternalSessionId === session.id && (
+                            <div style={{ padding: '0 16px 16px 68px', fontSize: '13px', color: '#4b5563' }}>
+                              <div style={{ marginBottom: '6px' }}><strong>Location:</strong> {session.location || 'Unknown'}</div>
+                              <div><strong>User Agent:</strong> {session.userAgent || 'Unknown'}</div>
+                            </div>
+                          )}
                         </div>
                       )) : (
                         <div className="empty-row-hint">No apps have access to your account.</div>
