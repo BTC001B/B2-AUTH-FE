@@ -2802,7 +2802,7 @@ body {
 }
 
 .icon-action-btn {
-  background: black;
+  /* background: black; */
   border: none;
   /* color: #5f6368; */
   color: #d93025;

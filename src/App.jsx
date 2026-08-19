@@ -2260,7 +2260,7 @@ function App() {
 
                   {/* Your Devices Section */}
                   <div className="security-section">
-                    <h3 className="identity-group-title"><Monitor size={14} /> Your devices</h3>
+                    <h3 className="identity-group-title"><Monitor size={14} /> Active Sessions</h3>
                     <div className="identity-container scrollable-identity-container">
                       {sessions.map(session => {
                         const device = parseUserAgent(session.userAgent);
@@ -2306,7 +2306,9 @@ function App() {
                   <div className="security-section">
                     <h3 className="identity-group-title"><Globe size={14} /> Third-party apps with account access</h3>
                     <div className="identity-container scrollable-identity-container">
-                      {externalSessions.length > 0 ? externalSessions.map(session => (
+                      {externalSessions.length > 0 ? externalSessions.map(session => {
+                        const device = parseUserAgent(session.userAgent);
+                        return (
                         <div key={session.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
                           <div 
                             className="identity-row" 
@@ -2329,7 +2331,7 @@ function App() {
                             <div className="identity-info">
                               <div className="identity-label">{session.appName}</div>
                               <div className="identity-sub">
-                                {session.ipAddress} • Authorized {new Date(session.loggedInAt).toLocaleDateString()}
+                                {session.ipAddress} • {device.browser} on {device.name} • Authorized {new Date(session.loggedInAt).toLocaleDateString()}
                               </div>
                             </div>
                             <div className="identity-trailing">
@@ -2343,7 +2345,8 @@ function App() {
                             </div>
                           )}
                         </div>
-                      )) : (
+                      );
+                      }) : (
                         <div className="empty-row-hint">No apps have access to your account.</div>
                       )}
                     </div>
