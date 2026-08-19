@@ -574,7 +574,7 @@ function App() {
 
   const fetchSessions = async (token) => {
     try {
-      const res = await axios.get(`${API_BASE}/auth/user-sessions`, {
+      const res = await axios.get(`${API_BASE}/auth/sessions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
