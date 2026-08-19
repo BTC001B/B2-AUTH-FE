@@ -249,6 +249,7 @@ function App() {
   const [selectedRecoveryMethod, setSelectedRecoveryMethod] = useState('');
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [sessions, setSessions] = useState([]);
+  const [expandedSessionId, setExpandedSessionId] = useState(null);
   const [externalSessions, setExternalSessions] = useState([]);
   const [expandedExternalSessionId, setExpandedExternalSessionId] = useState(null);
   const [accounts, setAccounts] = useState(() => JSON.parse(localStorage.getItem('bnx_accounts') || '[]'));
@@ -2264,25 +2265,37 @@ function App() {
                       {sessions.map(session => {
                         const device = parseUserAgent(session.userAgent);
                         return (
-                          <div key={session.id} className="identity-row">
-                            <div className="identity-leading">
-                              <div className="identity-icon-box">
-                                {device.type === 'phone' ? <Smartphone size={18} /> :
-                                  device.type === 'tablet' ? <Tablet size={18} /> : <Monitor size={18} />}
+                          <div key={session.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                            <div 
+                              className="identity-row" 
+                              onClick={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
+                              style={{ cursor: 'pointer', borderBottom: 'none' }}
+                            >
+                              <div className="identity-leading">
+                                <div className="identity-icon-box">
+                                  {device.type === 'phone' ? <Smartphone size={18} /> :
+                                    device.type === 'tablet' ? <Tablet size={18} /> : <Monitor size={18} />}
+                                </div>
+                              </div>
+                              <div className="identity-info">
+                                <div className="identity-label">
+                                  {device.name}
+                                  {session.isCurrentSession && <span className="current-badge-mini">This device</span>}
+                                </div>
+                                <div className="identity-sub">{session.ipAddress} • {device.browser}</div>
+                              </div>
+                              <div className="identity-trailing">
+                                {!session.isCurrentSession && (
+                                  <button className="icon-action-btn" onClick={(e) => { e.stopPropagation(); handleRevokeSession(session.id); }}><LogOut size={16} /></button>
+                                )}
                               </div>
                             </div>
-                            <div className="identity-info">
-                              <div className="identity-label">
-                                {device.name}
-                                {session.isCurrentSession && <span className="current-badge-mini">This device</span>}
+                            {expandedSessionId === session.id && (
+                              <div style={{ padding: '0 16px 16px 68px', fontSize: '13px', color: '#4b5563' }}>
+                                <div style={{ marginBottom: '6px' }}><strong>Location:</strong> {session.location || 'Unknown'}</div>
+                                <div><strong>Device/Browser:</strong> {session.userAgent || 'Unknown'}</div>
                               </div>
-                              <div className="identity-sub">{session.ipAddress} • {device.browser}</div>
-                            </div>
-                            <div className="identity-trailing">
-                              {!session.isCurrentSession && (
-                                <button className="row-action-btn danger" onClick={() => handleRevokeSession(session.id)}>Sign out</button>
-                              )}
-                            </div>
+                            )}
                           </div>
                         );
                       })}
