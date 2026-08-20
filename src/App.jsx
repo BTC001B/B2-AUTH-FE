@@ -1978,6 +1978,9 @@ function App() {
                 <div className="avatar-circle-elite">
                   {formData.firstName?.[0] || formData.identifier?.[0]?.toUpperCase() || 'U'}
                 </div>
+                <span className="profile-display-name">
+                  {formData.firstName ? `${formData.firstName} ${formData.lastName || ''}`.trim() : (formData.identifier || 'User')}
+                </span>
               </button>
 
               {showAccountSwitcher && (
