@@ -2146,133 +2146,157 @@ function App() {
                   </header>
 
                   {/* Business Accounts Section */}
-                  {(sidebarCategory === 'ALL' || sidebarCategory === 'BUSINESS') && accounts.some(a => a.userData.accountType === 'BUSINESS') && (
-                    <div className="identity-group">
+                  {(sidebarCategory === 'ALL' ? accounts.some(a => a.userData.accountType === 'BUSINESS') : sidebarCategory === 'BUSINESS') && (
+                    <div className="identity-group" style={{ marginTop: sidebarCategory === 'ALL' ? '0' : '24px' }}>
                       <h3 className="identity-group-title"><Briefcase size={14} /> Business Accounts</h3>
                       <div className="identity-container animate-scale-in">
-                        {accounts.filter(a => a.userData.accountType === 'BUSINESS').map(account => (
-                          <div
-                            key={account.userData.email}
-                            className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
-                            onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
-                          >
-                            <div className="identity-leading">
-                              <div className="identity-avatar-mini business">
-                                {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                        {accounts.filter(a => a.userData.accountType === 'BUSINESS').length > 0 ? (
+                          accounts.filter(a => a.userData.accountType === 'BUSINESS').map(account => (
+                            <div
+                              key={account.userData.email}
+                              className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
+                              onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
+                            >
+                              <div className="identity-leading">
+                                <div className="identity-avatar-mini business">
+                                  {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                                </div>
+                              </div>
+                              <div className="identity-info">
+                                <div className="identity-label">
+                                  {account.userData.firstName} {account.userData.lastName}
+                                  {account.token === accessToken && <span className="current-badge-mini">Current</span>}
+                                  {account.userData.isPrimary && <span className="primary-badge-mini">Primary</span>}
+                                </div>
+                                <div className="identity-sub">{account.userData.email}</div>
+                              </div>
+                              <div className="identity-trailing">
+                                {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
                               </div>
                             </div>
-                            <div className="identity-info">
-                              <div className="identity-label">
-                                {account.userData.firstName} {account.userData.lastName}
-                                {account.token === accessToken && <span className="current-badge-mini">Current</span>}
-                                {account.userData.isPrimary && <span className="primary-badge-mini">Primary</span>}
-                              </div>
-                              <div className="identity-sub">{account.userData.email}</div>
-                            </div>
-                            <div className="identity-trailing">
-                              {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
-                            </div>
+                          ))
+                        ) : (
+                          <div style={{ padding: '24px', textAlign: 'center', color: '#5f6368', fontSize: '14px' }}>
+                            No business accounts found.
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   )}
 
                   {/* Personal Accounts Section */}
-                  {(sidebarCategory === 'ALL' || sidebarCategory === 'PERSONAL') && accounts.some(a => a.userData.accountType === 'PERSONAL' || a.userData.accountType === 'PUBLIC') && (
+                  {(sidebarCategory === 'ALL' ? accounts.some(a => a.userData.accountType === 'PERSONAL' || a.userData.accountType === 'PUBLIC') : sidebarCategory === 'PERSONAL') && (
                     <div className="identity-group" style={{ marginTop: '24px' }}>
                       <h3 className="identity-group-title"><User size={14} /> Personal Accounts</h3>
                       <div className="identity-container animate-scale-in">
-                        {accounts.filter(a => a.userData.accountType === 'PERSONAL' || a.userData.accountType === 'PUBLIC').map(account => (
-                          <div
-                            key={account.userData.email}
-                            className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
-                            onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
-                          >
-                            <div className="identity-leading">
-                              <div className="identity-avatar-mini">
-                                {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                        {accounts.filter(a => a.userData.accountType === 'PERSONAL' || a.userData.accountType === 'PUBLIC').length > 0 ? (
+                          accounts.filter(a => a.userData.accountType === 'PERSONAL' || a.userData.accountType === 'PUBLIC').map(account => (
+                            <div
+                              key={account.userData.email}
+                              className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
+                              onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
+                            >
+                              <div className="identity-leading">
+                                <div className="identity-avatar-mini">
+                                  {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                                </div>
+                              </div>
+                              <div className="identity-info">
+                                <div className="identity-label">
+                                  {account.userData.firstName} {account.userData.lastName}
+                                  {account.token === accessToken && <span className="current-badge-mini">Current</span>}
+                                  {account.userData.isPrimary && <span className="primary-badge-mini">Primary</span>}
+                                </div>
+                                <div className="identity-sub">{account.userData.email}</div>
+                              </div>
+                              <div className="identity-trailing">
+                                {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
                               </div>
                             </div>
-                            <div className="identity-info">
-                              <div className="identity-label">
-                                {account.userData.firstName} {account.userData.lastName}
-                                {account.token === accessToken && <span className="current-badge-mini">Current</span>}
-                                {account.userData.isPrimary && <span className="primary-badge-mini">Primary</span>}
-                              </div>
-                              <div className="identity-sub">{account.userData.email}</div>
-                            </div>
-                            <div className="identity-trailing">
-                              {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
-                            </div>
+                          ))
+                        ) : (
+                          <div style={{ padding: '24px', textAlign: 'center', color: '#5f6368', fontSize: '14px' }}>
+                            No personal accounts found.
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   )}
 
                   {/* Child Accounts Section */}
-                  {(sidebarCategory === 'ALL' || sidebarCategory === 'CHILD') && accounts.some(a => a.userData.accountType === 'CHILD') && (
+                  {(sidebarCategory === 'ALL' ? accounts.some(a => a.userData.accountType === 'CHILD') : sidebarCategory === 'CHILD') && (
                     <div className="identity-group" style={{ marginTop: '24px' }}>
                       <h3 className="identity-group-title"><User size={14} /> Child Accounts</h3>
                       <div className="identity-container animate-scale-in">
-                        {accounts.filter(a => a.userData.accountType === 'CHILD').map(account => (
-                          <div
-                            key={account.userData.email}
-                            className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
-                            onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
-                          >
-                            <div className="identity-leading">
-                              <div className="identity-avatar-mini">
-                                {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                        {accounts.filter(a => a.userData.accountType === 'CHILD').length > 0 ? (
+                          accounts.filter(a => a.userData.accountType === 'CHILD').map(account => (
+                            <div
+                              key={account.userData.email}
+                              className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
+                              onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
+                            >
+                              <div className="identity-leading">
+                                <div className="identity-avatar-mini">
+                                  {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                                </div>
+                              </div>
+                              <div className="identity-info">
+                                <div className="identity-label">
+                                  {account.userData.firstName} {account.userData.lastName}
+                                  {account.token === accessToken && <span className="current-badge-mini">Current</span>}
+                                  {account.userData.isPrimary && <span className="primary-badge-mini">Primary</span>}
+                                </div>
+                                <div className="identity-sub">{account.userData.email}</div>
+                              </div>
+                              <div className="identity-trailing">
+                                {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
                               </div>
                             </div>
-                            <div className="identity-info">
-                              <div className="identity-label">
-                                {account.userData.firstName} {account.userData.lastName}
-                                {account.token === accessToken && <span className="current-badge-mini">Current</span>}
-                                {account.userData.isPrimary && <span className="primary-badge-mini">Primary</span>}
-                              </div>
-                              <div className="identity-sub">{account.userData.email}</div>
-                            </div>
-                            <div className="identity-trailing">
-                              {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
-                            </div>
+                          ))
+                        ) : (
+                          <div style={{ padding: '24px', textAlign: 'center', color: '#5f6368', fontSize: '14px' }}>
+                            No child accounts found.
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   )}
                   
                   {/* Primary Accounts Section */}
-                  {(sidebarCategory === 'ALL' || sidebarCategory === 'PRIMARY') && accounts.some(a => a.userData.isPrimary) && (
+                  {(sidebarCategory === 'ALL' ? accounts.some(a => a.userData.isPrimary) : sidebarCategory === 'PRIMARY') && (
                     <div className="identity-group" style={{ marginTop: '24px' }}>
                       <h3 className="identity-group-title"><CheckCircle size={14} /> Primary Accounts</h3>
                       <div className="identity-container animate-scale-in">
-                        {accounts.filter(a => a.userData.isPrimary).map(account => (
-                          <div
-                            key={account.userData.email}
-                            className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
-                            onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
-                          >
-                            <div className="identity-leading">
-                              <div className="identity-avatar-mini">
-                                {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                        {accounts.filter(a => a.userData.isPrimary).length > 0 ? (
+                          accounts.filter(a => a.userData.isPrimary).map(account => (
+                            <div
+                              key={account.userData.email}
+                              className={`identity-row clickable ${account.token === accessToken ? 'active-identity' : ''}`}
+                              onClick={() => account.token !== accessToken && handleSwitchAccount(account)}
+                            >
+                              <div className="identity-leading">
+                                <div className="identity-avatar-mini">
+                                  {account.userData.firstName?.[0] || account.userData.email[0].toUpperCase()}
+                                </div>
+                              </div>
+                              <div className="identity-info">
+                                <div className="identity-label">
+                                  {account.userData.firstName} {account.userData.lastName}
+                                  {account.token === accessToken && <span className="current-badge-mini">Current</span>}
+                                  {account.userData.isPrimary && <span className="primary-badge-mini">Primary</span>}
+                                </div>
+                                <div className="identity-sub">{account.userData.email}</div>
+                              </div>
+                              <div className="identity-trailing">
+                                {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
                               </div>
                             </div>
-                            <div className="identity-info">
-                              <div className="identity-label">
-                                {account.userData.firstName} {account.userData.lastName}
-                                {account.token === accessToken && <span className="current-badge-mini">Current</span>}
-                                <span className="primary-badge-mini">Primary</span>
-                              </div>
-                              <div className="identity-sub">{account.userData.email}</div>
-                            </div>
-                            <div className="identity-trailing">
-                              {account.token !== accessToken && <ChevronRight size={16} className="switch-arrow-hint" />}
-                            </div>
+                          ))
+                        ) : (
+                          <div style={{ padding: '24px', textAlign: 'center', color: '#5f6368', fontSize: '14px' }}>
+                            No primary accounts found.
                           </div>
-                        ))}
+                        )}
                       </div>
                     </div>
                   )}
