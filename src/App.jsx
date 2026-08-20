@@ -1981,6 +1981,14 @@ function App() {
                 <span className="profile-display-name">
                   {formData.firstName ? `${formData.firstName} ${formData.lastName || ''}`.trim() : (formData.identifier || 'User')}
                 </span>
+                <ChevronDown 
+                  size={16} 
+                  style={{ 
+                    color: '#5f6368', 
+                    transition: 'transform 0.2s ease',
+                    transform: showAccountSwitcher ? 'rotate(180deg)' : 'rotate(0deg)'
+                  }} 
+                />
               </button>
 
               {showAccountSwitcher && (
