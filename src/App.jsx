@@ -2029,49 +2029,46 @@ function App() {
 
         <aside className="dashboard-sidebar">
           <nav className="sidebar-nav">
+            <div className="sidebar-group-label" style={{ padding: '0 16px 8px', fontSize: '12px', fontWeight: 600, color: '#5f6368', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Your Accounts
+            </div>
+            {accounts.map((account, index) => {
+              const isActive = account.token === accessToken;
+              const typeLabel = account.userData?.accountType ? 
+                  account.userData.accountType.charAt(0).toUpperCase() + account.userData.accountType.slice(1).toLowerCase() + ' Account'
+                  : 'Account';
+                  
+              return (
+                <button
+                  key={index}
+                  className={`sidebar-item ${isActive ? 'active' : ''}`}
+                  onClick={() => handleSwitchAccount(account)}
+                  style={{ height: 'auto', padding: '12px 16px', alignItems: 'center' }}
+                >
+                  <div className="icon-box" style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: isActive ? '#e8f0fe' : '#f1f3f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isActive ? '#1a73e8' : '#5f6368', fontWeight: 600, fontSize: '14px', flexShrink: 0 }}>
+                    {account.userData?.firstName?.[0] || account.userData?.username?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <div className="label" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginLeft: '12px', overflow: 'hidden' }}>
+                    <span style={{ fontWeight: 600, fontSize: '14px', color: isActive ? '#1a73e8' : '#202124', whiteSpace: 'nowrap', textOverflow: 'ellipsis', width: '100%' }}>{typeLabel}</span>
+                    <span style={{ fontSize: '12px', color: isActive ? '#1a73e8' : '#5f6368', whiteSpace: 'nowrap', textOverflow: 'ellipsis', width: '100%', opacity: 0.8 }}>{account.userData?.email}</span>
+                  </div>
+                </button>
+              );
+            })}
+
             <button
-              className={`sidebar-item ${dashboardTab === 'emails' ? 'active' : ''}`}
-              onClick={() => setDashboardTab('emails')}
+              className="sidebar-item"
+              onClick={handleAddAccount}
+              style={{ marginTop: '8px' }}
             >
-              <div className="icon-box"><Mail size={18} /></div>
-              <span className="label">Dashboard</span>
-            </button>
-            <button
-              className={`sidebar-item ${dashboardTab === 'security' ? 'active' : ''}`}
-              onClick={() => {
-                setDashboardTab('security');
-                fetchFullProfile(accessToken);
-                fetchAuthenticatorAccounts(accessToken);
-                fetchSessions(accessToken);
-                fetchExternalSessions(accessToken);
-              }}
-            >
-              <div className="icon-box"><ShieldCheck size={18} /></div>
-              <span className="label">Security</span>
-            </button>
-            <button
-              className={`sidebar-item ${dashboardTab === 'settings' ? 'active' : ''}`}
-              onClick={() => setDashboardTab('settings')}
-            >
-              <div className="icon-box"><Settings size={18} /></div>
-              <span className="label">Settings</span>
+              <div className="icon-box"><Plus size={18} /></div>
+              <span className="label">Add account</span>
             </button>
           </nav>
 
           <div className="sidebar-spacer"></div>
 
           <footer className="sidebar-footer">
-            {/* <div className="user-profile-card" onClick={handleProfileClick}>
-              <div className="avatar">
-                {formData.firstName?.[0] || 'U'}
-              </div>
-              <div className="user-details">
-                <div className="user-name">{formData.firstName} {formData.lastName}</div>
-                <div className="user-email">Manage</div>
-              </div>
-              <ChevronRight size={16} className="switch-arrow" />
-            </div> */}
-
             <button className="sidebar-item logout-minimal" onClick={handleLogout}>
               <LogOut size={16} />
               <span>Sign Out</span>
