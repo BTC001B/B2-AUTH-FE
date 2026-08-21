@@ -1390,26 +1390,24 @@ function App() {
       return;
     }
 
-    if (signupType === 'PERSONAL' || signupType === 'CHILD') {
-      const username = formData.username.trim();
-      if (username.length < 10) {
-        setError('Email handle must be atleast 10 characters long.');
-        setView('signup-mail');
-        return;
-      }
-      const digits = (username.match(/\d/g) || []).length;
-      const letters = (username.match(/[a-zA-Z]/g) || []).length;
-      console.log({
-          username,
-          letters,
-          digits,
-          length: username.length
-      });
-      if (digits < 3 || letters < 7) {
-        setError('Email handle must be at least 7 letters and 3 numbers.');
-        setView('signup-mail');
-        return;
-      }
+    const username = formData.username.trim();
+    if (username.length < 10) {
+      setError('Email handle must be atleast 10 characters long.');
+      setView('signup-mail');
+      return;
+    }
+    const digits = (username.match(/\d/g) || []).length;
+    const letters = (username.match(/[a-zA-Z]/g) || []).length;
+    console.log({
+        username,
+        letters,
+        digits,
+        length: username.length
+    });
+    if (digits < 3 || letters < 7) {
+      setError('Email handle must be at least 7 letters and 3 numbers.');
+      setView('signup-mail');
+      return;
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -1477,24 +1475,22 @@ function App() {
       return;
     }
 
-    if (signupType === 'PERSONAL' || signupType === 'CHILD') {
-      const username = formData.username.trim();
-      if (username.length < 10) {
-        setError('Email handle must be atleast 10 characters long.');
-        return;
-      }
-      const digits = (username.match(/\d/g) || []).length;
-      const letters = (username.match(/[a-zA-Z]/g) || []).length;
-            console.log({
-          username,
-          letters,
-          digits,
-          length: username.length
-      });
-      if (digits < 3 || letters < 7) {
-        setError('Email handle must contain at least 7 letters and 3 numbers.');
-        return;
-      }
+    const username = formData.username.trim();
+    if (username.length < 10) {
+      setError('Email handle must be atleast 10 characters long.');
+      return;
+    }
+    const digits = (username.match(/\d/g) || []).length;
+    const letters = (username.match(/[a-zA-Z]/g) || []).length;
+    console.log({
+        username,
+        letters,
+        digits,
+        length: username.length
+    });
+    if (digits < 3 || letters < 7) {
+      setError('Email handle must contain at least 7 letters and 3 numbers.');
+      return;
     }
 
     if (tempToken) {
