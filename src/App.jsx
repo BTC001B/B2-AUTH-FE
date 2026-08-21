@@ -938,7 +938,9 @@ function App() {
     localStorage.setItem('bnx_userData', JSON.stringify(userData));
     setAccessToken(token);
 
-    if (clientId && redirectUri) {
+    if (clientId === 'account-ui' && redirectUri) {
+      window.location.href = `${redirectUri}?token=${token}`;
+    } else if (clientId && redirectUri) {
       try {
         const authRes = await axios.post(
           `${API_BASE}/oauth/authorize`,
@@ -1108,6 +1110,16 @@ function App() {
           } else {
             setView('dashboard');
           }
+        } else if (clientId === 'account-ui' && redirectUri) {
+          saveAccount(token, {
+            email: userData.email,
+            username: userData.username,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            accountType: userData.accountType,
+            isPrimary: userData.isPrimary
+          });
+          window.location.href = `${redirectUri}?token=${token}`;
         } else if (clientId && redirectUri) {
           // Still save the account for future use
           saveAccount(token, {
@@ -1172,6 +1184,16 @@ function App() {
           fetchExternalSessions(token);
           fetchRecoveryInfo(token);
           setView('dashboard');
+        } else if (clientId === 'account-ui' && redirectUri) {
+          saveAccount(token, {
+            email: userData.email,
+            username: userData.username,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            accountType: userData.accountType,
+            isPrimary: userData.isPrimary
+          });
+          window.location.href = `${redirectUri}?token=${token}`;
         } else if (clientId && redirectUri) {
           saveAccount(token, {
             email: userData.email,
@@ -1661,16 +1683,36 @@ function App() {
         otp: formData.otp
       });
       if (res.data.success) {
-        saveAccount(res.data.data.accessToken, res.data.data);
-        setAccessToken(res.data.data.accessToken);
+        const token = res.data.data.accessToken;
+        const userData = res.data.data;
+        saveAccount(token, userData);
+        setAccessToken(token);
 
-        // OAuth Redirection Fix
-        if (clientId && redirectUri) {
+        if (clientId === 'account-ui' && redirectUri) {
+          saveAccount(token, {
+            email: userData.email,
+            username: userData.username,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            accountType: userData.accountType,
+            isPrimary: userData.isPrimary
+          });
+          window.location.href = `${redirectUri}?token=${token}`;
+        } else if (clientId && redirectUri) {
+          saveAccount(token, {
+            email: userData.email,
+            username: userData.username,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            accountType: userData.accountType,
+            isPrimary: userData.isPrimary
+          });
+
           try {
             const authRes = await axios.post(
               `${API_BASE}/oauth/authorize`,
               { clientId, redirectUri, state },
-              { headers: { Authorization: `Bearer ${res.data.data.accessToken}` } }
+              { headers: { Authorization: `Bearer ${token}` } }
             );
             if (authRes.data.success) {
               const code = authRes.data.data.code;
