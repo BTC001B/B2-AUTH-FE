@@ -232,6 +232,7 @@ function App() {
   const [redirectUri, setRedirectUri] = useState('');
   const [state, setState] = useState('');
   const [registrationMode, setRegistrationMode] = useState(''); // business, child, public
+  const [businessSignupType, setBusinessSignupType] = useState('secondary'); // primary, secondary
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -1438,6 +1439,8 @@ function App() {
     }
 
     if (signupType === 'BUSINESS') {
+      payload.accountType = 'BUSINESS';
+      payload.businessSignupType = businessSignupType;
       payload.ownerFirstName = formData.firstName;
       payload.ownerLastName = formData.lastName;
       payload.businessName = formData.businessName;
@@ -3242,6 +3245,24 @@ function App() {
 
           {view === 'signup-business' && (
             <form onSubmit={handleGoToMailSignup} className="auth-step">
+              
+              <div className="business-signup-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-secondary)', padding: '6px', borderRadius: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setBusinessSignupType('primary')}
+                  style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: businessSignupType === 'primary' ? 'var(--primary)' : 'transparent', color: businessSignupType === 'primary' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }}
+                >
+                  Primary
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBusinessSignupType('secondary')}
+                  style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: businessSignupType === 'secondary' ? 'var(--primary)' : 'transparent', color: businessSignupType === 'secondary' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }}
+                >
+                  Secondary
+                </button>
+              </div>
+
               <div className="name-grid">
                 <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First Name</label></div>
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last Name</label></div>
@@ -3252,7 +3273,9 @@ function App() {
               </div>
               <div className="auth-actions">
                 <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>Next</button>
+                <button type="submit" className="primary-btn" disabled={loading}>
+                  {businessSignupType === 'primary' ? 'Verify & Create Account' : 'Next'}
+                </button>
               </div>
             </form>
           )}
