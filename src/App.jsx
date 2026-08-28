@@ -3246,20 +3246,22 @@ function App() {
           {view === 'signup-business' && (
             <form onSubmit={handleGoToMailSignup} className="auth-step">
               
-              <div className="business-signup-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '24px', background: 'var(--bg-secondary)', padding: '6px', borderRadius: '12px' }}>
+              <div className="business-signup-tabs" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
                 <button
                   type="button"
                   onClick={() => setBusinessSignupType('primary')}
-                  style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: businessSignupType === 'primary' ? 'var(--primary)' : 'transparent', color: businessSignupType === 'primary' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }}
+                  style={{ flex: 1, padding: '16px', borderRadius: '12px', border: businessSignupType === 'primary' ? '2px solid var(--primary)' : '2px solid var(--border)', background: businessSignupType === 'primary' ? 'var(--primary-soft)' : 'transparent', color: businessSignupType === 'primary' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
                 >
-                  Primary
+                  <span style={{ fontSize: '16px' }}>Primary</span>
+                  <span style={{ fontSize: '12px', fontWeight: '400', opacity: 0.8 }}>Verified account</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setBusinessSignupType('secondary')}
-                  style={{ flex: 1, padding: '12px', borderRadius: '8px', border: 'none', background: businessSignupType === 'secondary' ? 'var(--primary)' : 'transparent', color: businessSignupType === 'secondary' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }}
+                  style={{ flex: 1, padding: '16px', borderRadius: '12px', border: businessSignupType === 'secondary' ? '2px solid var(--primary)' : '2px solid var(--border)', background: businessSignupType === 'secondary' ? 'var(--primary-soft)' : 'transparent', color: businessSignupType === 'secondary' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
                 >
-                  Secondary
+                  <span style={{ fontSize: '16px' }}>Secondary</span>
+                  <span style={{ fontSize: '12px', fontWeight: '400', opacity: 0.8 }}>Standard flow</span>
                 </button>
               </div>
 
