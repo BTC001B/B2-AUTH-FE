@@ -223,9 +223,10 @@ const LegalPage = ({ documentKey, onBack, onShowDocument }) => {
 };
 
 function App() {
-  const [view, setView] = useState(getInitialView); // login-email, login-password, signup-selection, signup-profile, signup-child, signup-business, signup-mail, dashboard, verifying
+  const [view, setView] = useState(getInitialView); // login-email, login-password, signup-selection, signup-profile, signup-child, signup-business, signup-mail, dashboard, verifying, signup-vkyc
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [vkycUrl, setVkycUrl] = useState('');
 
   // OAuth Context
   const [clientId, setClientId] = useState('');
@@ -324,6 +325,29 @@ function App() {
     window.history.pushState({}, '', '/');
     setView(accessToken || localStorage.getItem('bnx_accessToken') ? 'dashboard' : 'login-email');
   };
+
+  useEffect(() => {
+    if (view === 'signup-vkyc' && vkycUrl && window.CFVKYC) {
+      try {
+        const vkyc = window.CFVKYC({
+          srcUrl: vkycUrl,
+          callback: (response) => {
+            console.log("VKYC Response:", response);
+            if (response.status === 'SUCCESS') {
+              setFormData(prev => ({ ...prev, username: '', emailName: '', verificationId: response.verificationId }));
+              vkyc.closeSDK();
+              setView('signup-mail');
+            } else if (response.status === 'CLOSE') {
+              // User closed the SDK manually, go back to business form
+              setView('signup-business');
+            }
+          },
+        });
+      } catch (err) {
+        console.error("VKYC Init error", err);
+      }
+    }
+  }, [view, vkycUrl]);
 
   useEffect(() => {
     if (!showAccountSwitcher) return;
@@ -1255,8 +1279,30 @@ function App() {
     setError('');
 
     if (signupType === 'BUSINESS') {
-      setFormData(prev => ({ ...prev, username: '', emailName: '' }));
-      setView('signup-mail');
+      if (businessSignupType === 'primary') {
+        setLoading(true);
+        axios.post(`${API_BASE}/auth/business/vkyc-initiate`, {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          businessName: formData.businessName,
+          registrationNumber: formData.registrationNumber
+        })
+        .then(res => {
+          if (res.data.success && res.data.data.redirectUrl) {
+            setVkycUrl(res.data.data.redirectUrl);
+            setView('signup-vkyc');
+          } else {
+            setError('Failed to initiate verification.');
+          }
+        })
+        .catch(err => {
+          setError(err.response?.data?.message || 'Failed to initialize Video KYC.');
+        })
+        .finally(() => setLoading(false));
+      } else {
+        setFormData(prev => ({ ...prev, username: '', emailName: '' }));
+        setView('signup-mail');
+      }
       return;
     }
 
@@ -3280,6 +3326,16 @@ function App() {
                 </button>
               </div>
             </form>
+          )}
+
+          {view === 'signup-vkyc' && (
+            <div className="auth-step vkyc-step" style={{ minWidth: '400px', minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
+              <h2 style={{ fontSize: '20px', marginBottom: '16px', textAlign: 'center' }}>Complete Video KYC</h2>
+              <div id="cf-vkyc-sdk" style={{ flex: 1, border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}></div>
+              <div className="auth-actions" style={{ marginTop: '16px' }}>
+                <button type="button" className="text-btn" onClick={() => setView('signup-business')}>Back</button>
+              </div>
+            </div>
           )}
 
           {view === 'signup-business-onboarding' && (
