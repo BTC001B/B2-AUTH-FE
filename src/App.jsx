@@ -300,6 +300,8 @@ function App() {
   const [setup2FAData, setSetup2FAData] = useState({ secret: '', qrCodeUrl: '' });
   const [setup2FACode, setSetup2FACode] = useState('');
   const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'success' });
+  const [showPanModal, setShowPanModal] = useState(false);
+  const [panData, setPanData] = useState({ panNumber: '', panName: '', emailId: null });
   const topbarRightRef = useRef(null);
 
   const showAlert = (message, type = 'success') => {
@@ -668,19 +670,27 @@ function App() {
     }
   };
 
-  const handleMakePrimary = async (emailId) => {
+  const handleMakePrimary = (emailId) => {
+    setPanData({ panNumber: '', panName: '', emailId });
+    setShowPanModal(true);
+  };
+
+  const handleVerifyPan = async (e) => {
+    e.preventDefault();
     setLoading(true);
     try {
       const res = await axios.post(
-        `${API_BASE}/verification/initiate/${emailId}`,
-        {},
+        `${API_BASE}/verification/verify-pan/${panData.emailId}`,
+        { pan: panData.panNumber, name: panData.panName },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       if (res.data.success) {
-        window.location.href = res.data.data.redirectUrl;
+        setShowPanModal(false);
+        showAlert("PAN verified successfully. Email is now primary.");
+        fetchEmails(accessToken);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to initiate verification');
+      setError(err.response?.data?.message || 'Failed to verify PAN');
     } finally {
       setLoading(false);
     }
@@ -2759,6 +2769,55 @@ function App() {
                           {loading ? <RefreshCw className="spin" size={16} /> : "Update Password"}
                         </button>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* PAN Verification Modal */}
+                {showPanModal && (
+                  <div className="auth-modal-overlay">
+                    <div className="auth-modal-content animate-scale-in" style={{ maxWidth: "400px" }}>
+                      <div className="auth-modal-header">
+                        <h3>Verify PAN</h3>
+                        <button className="auth-close-btn" onClick={() => setShowPanModal(false)}>
+                          <X size={20} />
+                        </button>
+                      </div>
+                      <form onSubmit={handleVerifyPan} className="auth-modal-body">
+                        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                          Please verify your PAN to make this email your primary account.
+                        </p>
+                        <div className="auth-input-group">
+                          <label>PAN Number</label>
+                          <input
+                            type="text"
+                            placeholder="Enter 10-digit PAN"
+                            value={panData.panNumber}
+                            onChange={e => setPanData({ ...panData, panNumber: e.target.value.toUpperCase() })}
+                            maxLength={10}
+                            required
+                          />
+                        </div>
+                        <div className="auth-input-group">
+                          <label style={{ marginTop: '10px' }}>Name on PAN</label>
+                          <input
+                            style={{ marginBottom: '10px' }}
+                            type="text"
+                            placeholder="Enter exact name as per PAN"
+                            value={panData.panName}
+                            onChange={e => setPanData({ ...panData, panName: e.target.value.toUpperCase() })}
+                            required
+                          />
+                        </div>
+                        {error && <div className="error-message-inline" style={{ marginBottom: "16px" }}>{error}</div>}
+                        <button
+                          type="submit"
+                          className="action-btn primary-solid full-width"
+                          disabled={loading || panData.panNumber.length !== 10 || !panData.panName}
+                        >
+                          {loading ? <RefreshCw className="spin" size={16} /> : "Verify & Make Primary"}
+                        </button>
+                      </form>
                     </div>
                   </div>
                 )}
