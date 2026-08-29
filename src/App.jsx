@@ -301,7 +301,7 @@ function App() {
   const [setup2FACode, setSetup2FACode] = useState('');
   const [customAlert, setCustomAlert] = useState({ show: false, message: '', type: 'success' });
   const [showPanModal, setShowPanModal] = useState(false);
-  const [panData, setPanData] = useState({ panNumber: '', panName: '', emailId: null });
+  const [panData, setPanData] = useState({ panNumber: '', panName: '', gstin: '', emailId: null });
   const topbarRightRef = useRef(null);
 
   const showAlert = (message, type = 'success') => {
@@ -681,7 +681,7 @@ function App() {
     try {
       const res = await axios.post(
         `${API_BASE}/verification/verify-pan/${panData.emailId}`,
-        { pan: panData.panNumber, name: panData.panName },
+        { pan: panData.panNumber, name: panData.panName, gstin: panData.gstin },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
       if (res.data.success) {
@@ -2905,22 +2905,38 @@ function App() {
                       required
                     />
                   </div>
-                  <div className="auth-input-group">
-                    <label style={{ marginTop: '10px' }}>Name on PAN</label>
-                    <input
-                      style={{ marginBottom: '10px' }}
-                      type="text"
-                      placeholder="Enter exact name as per PAN"
-                      value={panData.panName}
-                      onChange={e => setPanData({ ...panData, panName: e.target.value.toUpperCase() })}
-                      required
-                    />
-                  </div>
+                  
+                  {profileData?.accountType === 'BUSINESS' ? (
+                    <div className="auth-input-group">
+                      <label style={{ marginTop: '10px' }}>GSTIN</label>
+                      <input
+                        style={{ marginBottom: '10px' }}
+                        type="text"
+                        placeholder="Enter active GSTIN for this PAN"
+                        value={panData.gstin}
+                        onChange={e => setPanData({ ...panData, gstin: e.target.value.toUpperCase() })}
+                        required
+                      />
+                    </div>
+                  ) : (
+                    <div className="auth-input-group">
+                      <label style={{ marginTop: '10px' }}>Name on PAN</label>
+                      <input
+                        style={{ marginBottom: '10px' }}
+                        type="text"
+                        placeholder="Enter exact name as per PAN"
+                        value={panData.panName}
+                        onChange={e => setPanData({ ...panData, panName: e.target.value })}
+                        required
+                      />
+                    </div>
+                  )}
+
                   {error && <div className="error-message-inline" style={{ marginBottom: "16px" }}>{error}</div>}
                   <button
                     type="submit"
                     className="action-btn primary-solid full-width"
-                    disabled={loading || panData.panNumber.length !== 10 || !panData.panName}
+                    disabled={loading || panData.panNumber.length !== 10 || (profileData?.accountType === 'BUSINESS' ? !panData.gstin : !panData.panName)}
                   >
                     {loading ? <RefreshCw className="spin" size={16} /> : "Verify & Make Primary"}
                   </button>
