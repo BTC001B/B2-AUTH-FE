@@ -2773,54 +2773,7 @@ function App() {
                   </div>
                 )}
 
-                {/* PAN Verification Modal */}
-                {showPanModal && (
-                  <div className="auth-modal-overlay">
-                    <div className="auth-modal-content animate-scale-in" style={{ maxWidth: "400px" }}>
-                      <div className="auth-modal-header">
-                        <h3>Verify PAN</h3>
-                        <button className="auth-close-btn" onClick={() => setShowPanModal(false)}>
-                          <X size={20} />
-                        </button>
-                      </div>
-                      <form onSubmit={handleVerifyPan} className="auth-modal-body">
-                        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                          Please verify your PAN to make this email your primary account.
-                        </p>
-                        <div className="auth-input-group">
-                          <label>PAN Number</label>
-                          <input
-                            type="text"
-                            placeholder="Enter 10-digit PAN"
-                            value={panData.panNumber}
-                            onChange={e => setPanData({ ...panData, panNumber: e.target.value.toUpperCase() })}
-                            maxLength={10}
-                            required
-                          />
-                        </div>
-                        <div className="auth-input-group">
-                          <label style={{ marginTop: '10px' }}>Name on PAN</label>
-                          <input
-                            style={{ marginBottom: '10px' }}
-                            type="text"
-                            placeholder="Enter exact name as per PAN"
-                            value={panData.panName}
-                            onChange={e => setPanData({ ...panData, panName: e.target.value.toUpperCase() })}
-                            required
-                          />
-                        </div>
-                        {error && <div className="error-message-inline" style={{ marginBottom: "16px" }}>{error}</div>}
-                        <button
-                          type="submit"
-                          className="action-btn primary-solid full-width"
-                          disabled={loading || panData.panNumber.length !== 10 || !panData.panName}
-                        >
-                          {loading ? <RefreshCw className="spin" size={16} /> : "Verify & Make Primary"}
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                )}
+
               </motion.div>
             )}
 
@@ -2926,6 +2879,55 @@ function App() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* PAN Verification Modal */}
+          {showPanModal && (
+            <div className="auth-modal-overlay">
+              <div className="auth-modal-content animate-scale-in" style={{ maxWidth: "400px" }}>
+                <div className="auth-modal-header">
+                  <h3>Verify PAN</h3>
+                  <button className="auth-close-btn" onClick={() => setShowPanModal(false)}>
+                    <X size={20} />
+                  </button>
+                </div>
+                <form onSubmit={handleVerifyPan} className="auth-modal-body">
+                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                    Please verify your PAN to make this email your primary account.
+                  </p>
+                  <div className="auth-input-group">
+                    <label>PAN Number</label>
+                    <input
+                      type="text"
+                      placeholder="Enter 10-digit PAN"
+                      value={panData.panNumber}
+                      onChange={e => setPanData({ ...panData, panNumber: e.target.value.toUpperCase() })}
+                      maxLength={10}
+                      required
+                    />
+                  </div>
+                  <div className="auth-input-group">
+                    <label style={{ marginTop: '10px' }}>Name on PAN</label>
+                    <input
+                      style={{ marginBottom: '10px' }}
+                      type="text"
+                      placeholder="Enter exact name as per PAN"
+                      value={panData.panName}
+                      onChange={e => setPanData({ ...panData, panName: e.target.value.toUpperCase() })}
+                      required
+                    />
+                  </div>
+                  {error && <div className="error-message-inline" style={{ marginBottom: "16px" }}>{error}</div>}
+                  <button
+                    type="submit"
+                    className="action-btn primary-solid full-width"
+                    disabled={loading || panData.panNumber.length !== 10 || !panData.panName}
+                  >
+                    {loading ? <RefreshCw className="spin" size={16} /> : "Verify & Make Primary"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     );
