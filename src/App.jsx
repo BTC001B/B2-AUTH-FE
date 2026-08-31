@@ -234,7 +234,7 @@ function App() {
   const [state, setState] = useState('');
   const [registrationMode, setRegistrationMode] = useState(''); // business, child, public
   const [businessSignupType, setBusinessSignupType] = useState('secondary'); // primary, secondary
-  const [primaryBusinessStep, setPrimaryBusinessStep] = useState(1);
+  const [primaryBusinessStep, setPrimaryBusinessStep] = useState(0);
   const [primaryBusinessData, setPrimaryBusinessData] = useState({ size: 'small', cin: '', pan: '', gstin: '', industry: '' });
 
   // Form Data
@@ -3402,24 +3402,53 @@ function App() {
                 </button>
               </div>
 
-              <div className="name-grid">
-                <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First Name</label></div>
-                <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last Name</label></div>
-              </div>
-
               {businessSignupType === 'primary' ? (
                 <>
-                  {primaryBusinessStep === 1 ? (
+                  {primaryBusinessStep === 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <p style={{ textAlign: 'center', fontSize: '15px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                        Choose your business size to continue verification
+                      </p>
+                      
+                      <div 
+                        onClick={() => {
+                          setPrimaryBusinessData(prev => ({ ...prev, size: 'small' }));
+                          setPrimaryBusinessStep(1);
+                        }}
+                        style={{ padding: '20px', borderRadius: '12px', border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '16px' }}
+                        className="business-size-card hover-lift"
+                      >
+                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontSize: '20px', fontWeight: 'bold' }}>S</div>
+                        <div>
+                          <h4 style={{ margin: '0 0 4px 0', fontSize: '16px' }}>Small Business</h4>
+                          <p style={{ margin: '0', fontSize: '13px', color: 'var(--text-secondary)' }}>Verify instantly using your CIN</p>
+                        </div>
+                      </div>
+
+                      <div 
+                        onClick={() => {
+                          setPrimaryBusinessData(prev => ({ ...prev, size: 'large' }));
+                          setPrimaryBusinessStep(1);
+                        }}
+                        style={{ padding: '20px', borderRadius: '12px', border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '16px' }}
+                        className="business-size-card hover-lift"
+                      >
+                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontSize: '20px', fontWeight: 'bold' }}>L</div>
+                        <div>
+                          <h4 style={{ margin: '0 0 4px 0', fontSize: '16px' }}>Large Business</h4>
+                          <p style={{ margin: '0', fontSize: '13px', color: 'var(--text-secondary)' }}>Verify via GSTIN and PAN details</p>
+                        </div>
+                      </div>
+                      
+                      <div className="auth-actions" style={{ marginTop: '16px' }}>
+                        <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
+                      </div>
+                    </div>
+                  ) : primaryBusinessStep === 1 ? (
                     <>
-                      <div className="input-group" style={{ marginBottom: '16px' }}>
-                        <select
-                          value={primaryBusinessData.size}
-                          onChange={(e) => setPrimaryBusinessData(prev => ({ ...prev, size: e.target.value }))}
-                          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent' }}
-                        >
-                          <option value="small">Small Business (CIN)</option>
-                          <option value="large">Large Business (GSTIN)</option>
-                        </select>
+                      <div className="name-grid">
+                        <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First Name</label></div>
+                        <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last Name</label></div>
                       </div>
 
                       {primaryBusinessData.size === 'small' ? (
@@ -3441,7 +3470,7 @@ function App() {
                       )}
                       
                       <div className="auth-actions">
-                        <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
+                        <button type="button" className="text-btn" onClick={() => setPrimaryBusinessStep(0)}>Back</button>
                         <button type="submit" className="primary-btn" disabled={loading}>
                           Verify Identity
                         </button>
@@ -3465,6 +3494,10 @@ function App() {
                 </>
               ) : (
                 <>
+                  <div className="name-grid">
+                    <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First Name</label></div>
+                    <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last Name</label></div>
+                  </div>
                   <div className="signup-inputs-container">
                     <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business Name</label></div>
                     <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required placeholder=" " /><label>Business ID Number</label></div>
