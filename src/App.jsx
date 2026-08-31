@@ -572,13 +572,18 @@ function App() {
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      if (formData.firstName?.trim().length >= 2 && formData.lastName?.trim() && formData.dob) {
+      const isBusiness = signupType === 'BUSINESS';
+      const hasBasicInfo = formData.firstName?.trim().length >= 2 && formData.lastName?.trim();
+      const hasDobOrIsBusiness = formData.dob || isBusiness;
+
+      if (hasBasicInfo && hasDobOrIsBusiness) {
         try {
           const res = await axios.get(`${API_BASE}/auth/username-suggestions`, {
             params: {
               firstName: formData.firstName,
               lastName: formData.lastName,
-              dob: formData.dob
+              dob: formData.dob || '2000-01-01',
+              mode: signupType
             }
           });
           if (res.data.success) {
@@ -594,7 +599,7 @@ function App() {
 
     const timer = setTimeout(fetchSuggestions, 500);
     return () => clearTimeout(timer);
-  }, [formData.firstName, formData.lastName, formData.dob]);
+  }, [formData.firstName, formData.lastName, formData.dob, signupType]);
 
   // API CALLS
   const fetchEmails = async (token) => {
