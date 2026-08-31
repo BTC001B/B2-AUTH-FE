@@ -1516,10 +1516,15 @@ function App() {
       payload.registrationNumber = formData.registrationNumber;
       payload.domain = 'bnxmail.com';
       if (businessSignupType === 'primary') {
-        payload.businessSize = primaryBusinessData.size;
-        payload.industry = primaryBusinessData.industry;
+        payload.businessSize = primaryBusinessData.size; // 'small' or 'large'
         payload.cin = primaryBusinessData.cin;
         payload.gstin = primaryBusinessData.gstin;
+        // The newly added detailed fields:
+        payload.businessType = onboardingData.businessType;
+        payload.industry = onboardingData.industry;
+        payload.companySize = onboardingData.companySize;
+        payload.businessWebsite = onboardingData.businessWebsite;
+        payload.businessAddress = onboardingData.businessAddress;
       }
     }
 
@@ -3484,9 +3489,83 @@ function App() {
                   ) : (
                     <>
                       <div className="signup-inputs-container">
-                        <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business Name</label></div>
-                        <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required placeholder=" " /><label>Registration Number (Optional)</label></div>
-                        <div className="input-group"><input type="text" value={primaryBusinessData.industry} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, industry: e.target.value }))} required placeholder=" " /><label>Industry</label></div>
+                        <div className="name-grid">
+                          <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business Name</label></div>
+                          <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required placeholder=" " /><label>Registration Number (Optional)</label></div>
+                        </div>
+
+                        <div className="name-grid">
+                          <div className="input-group">
+                            <select
+                              name="businessType"
+                              value={onboardingData.businessType}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, businessType: e.target.value })}
+                              required
+                              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent' }}
+                            >
+                              <option value="" disabled>Select Business Type</option>
+                              <option value="Sole Proprietorship">Sole Proprietorship</option>
+                              <option value="Partnership">Partnership</option>
+                              <option value="Private Limited">Private Limited</option>
+                              <option value="LLP">LLP</option>
+                              <option value="Corporation">Corporation</option>
+                              <option value="Non-Profit">Non-Profit</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          
+                          <div className="input-group">
+                            <input
+                              type="text"
+                              name="industry"
+                              value={onboardingData.industry}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, industry: e.target.value })}
+                              required
+                              placeholder=" "
+                            />
+                            <label>Industry</label>
+                          </div>
+                        </div>
+
+                        <div className="name-grid">
+                          <div className="input-group">
+                            <select
+                              name="companySize"
+                              value={onboardingData.companySize}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, companySize: e.target.value })}
+                              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent' }}
+                            >
+                              <option value="" disabled>Company Size (Optional)</option>
+                              <option value="1-10">1-10 employees</option>
+                              <option value="11-50">11-50 employees</option>
+                              <option value="51-200">51-200 employees</option>
+                              <option value="201-500">201-500 employees</option>
+                              <option value="500+">500+ employees</option>
+                            </select>
+                          </div>
+                          
+                          <div className="input-group">
+                            <input
+                              type="text"
+                              name="businessWebsite"
+                              value={onboardingData.businessWebsite}
+                              onChange={(e) => setOnboardingData({ ...onboardingData, businessWebsite: e.target.value })}
+                              placeholder=" "
+                            />
+                            <label>Website (Optional)</label>
+                          </div>
+                        </div>
+
+                        <div className="input-group">
+                          <input
+                            type="text"
+                            name="businessAddress"
+                            value={onboardingData.businessAddress}
+                            onChange={(e) => setOnboardingData({ ...onboardingData, businessAddress: e.target.value })}
+                            placeholder=" "
+                          />
+                          <label>Business Address (Optional)</label>
+                        </div>
                       </div>
                       <div className="auth-actions">
                         <button type="button" className="text-btn" onClick={() => setPrimaryBusinessStep(1)}>Back</button>
