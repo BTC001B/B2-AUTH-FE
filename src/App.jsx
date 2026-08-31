@@ -234,6 +234,8 @@ function App() {
   const [state, setState] = useState('');
   const [registrationMode, setRegistrationMode] = useState(''); // business, child, public
   const [businessSignupType, setBusinessSignupType] = useState('secondary'); // primary, secondary
+  const [primaryBusinessStep, setPrimaryBusinessStep] = useState(1);
+  const [primaryBusinessData, setPrimaryBusinessData] = useState({ size: 'small', cin: '', pan: '', gstin: '', industry: '' });
 
   // Form Data
   const [formData, setFormData] = useState({
@@ -1290,25 +1292,31 @@ function App() {
 
     if (signupType === 'BUSINESS') {
       if (businessSignupType === 'primary') {
-        setLoading(true);
-        axios.post(`${API_BASE}/auth/business/vkyc-initiate`, {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          businessName: formData.businessName,
-          registrationNumber: formData.registrationNumber
-        })
-        .then(res => {
-          if (res.data.success && res.data.data.redirectUrl) {
-            setVkycUrl(res.data.data.redirectUrl);
-            setView('signup-vkyc');
-          } else {
-            setError('Failed to initiate verification.');
-          }
-        })
-        .catch(err => {
-          setError(err.response?.data?.message || 'Failed to initialize Video KYC.');
-        })
-        .finally(() => setLoading(false));
+        if (primaryBusinessStep === 1) {
+          setLoading(true);
+          const type = primaryBusinessData.size === 'small' ? 'CIN' : 'GSTIN';
+          axios.post(`${API_BASE}/auth/verify-business`, {
+            type: type,
+            cin: primaryBusinessData.cin,
+            pan: primaryBusinessData.pan,
+            gstin: primaryBusinessData.gstin
+          })
+          .then(res => {
+            if (res.data.success) {
+              setPrimaryBusinessStep(2);
+            } else {
+              setError(res.data.message || 'Verification failed');
+            }
+          })
+          .catch(err => {
+            setError(err.response?.data?.message || 'Verification failed');
+          })
+          .finally(() => setLoading(false));
+        } else {
+          // Move to email signup from step 2
+          setFormData(prev => ({ ...prev, username: '', emailName: '' }));
+          setView('signup-mail');
+        }
       } else {
         setFormData(prev => ({ ...prev, username: '', emailName: '' }));
         setView('signup-mail');
@@ -1496,12 +1504,18 @@ function App() {
 
     if (signupType === 'BUSINESS') {
       payload.accountType = 'BUSINESS';
-      payload.businessSignupType = businessSignupType;
+      payload.businessFlow = businessSignupType;
       payload.ownerFirstName = formData.firstName;
       payload.ownerLastName = formData.lastName;
       payload.businessName = formData.businessName;
       payload.registrationNumber = formData.registrationNumber;
       payload.domain = 'bnxmail.com';
+      if (businessSignupType === 'primary') {
+        payload.businessSize = primaryBusinessData.size;
+        payload.industry = primaryBusinessData.industry;
+        payload.cin = primaryBusinessData.cin;
+        payload.gstin = primaryBusinessData.gstin;
+      }
     }
 
     try {
@@ -3392,27 +3406,78 @@ function App() {
                 <div className="input-group"><input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required placeholder=" " /><label>First Name</label></div>
                 <div className="input-group"><input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required placeholder=" " /><label>Last Name</label></div>
               </div>
-              <div className="signup-inputs-container">
-                <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business Name</label></div>
-                <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required placeholder=" " /><label>Business ID Number</label></div>
-              </div>
-              <div className="auth-actions">
-                <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
-                <button type="submit" className="primary-btn" disabled={loading}>
-                  {businessSignupType === 'primary' ? 'Verify & Create Account' : 'Next'}
-                </button>
-              </div>
-            </form>
-          )}
 
-          {view === 'signup-vkyc' && (
-            <div className="auth-step vkyc-step" style={{ minWidth: '400px', minHeight: '500px', display: 'flex', flexDirection: 'column' }}>
-              <h2 style={{ fontSize: '20px', marginBottom: '16px', textAlign: 'center' }}>Complete Video KYC</h2>
-              <div id="cf-vkyc-sdk" style={{ flex: 1, border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}></div>
-              <div className="auth-actions" style={{ marginTop: '16px' }}>
-                <button type="button" className="text-btn" onClick={() => setView('signup-business')}>Back</button>
-              </div>
-            </div>
+              {businessSignupType === 'primary' ? (
+                <>
+                  {primaryBusinessStep === 1 ? (
+                    <>
+                      <div className="input-group" style={{ marginBottom: '16px' }}>
+                        <select
+                          value={primaryBusinessData.size}
+                          onChange={(e) => setPrimaryBusinessData(prev => ({ ...prev, size: e.target.value }))}
+                          style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'transparent' }}
+                        >
+                          <option value="small">Small Business (CIN)</option>
+                          <option value="large">Large Business (GSTIN)</option>
+                        </select>
+                      </div>
+
+                      {primaryBusinessData.size === 'small' ? (
+                        <div className="input-group">
+                          <input type="text" value={primaryBusinessData.cin} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, cin: e.target.value }))} required placeholder=" " />
+                          <label>CIN Number</label>
+                        </div>
+                      ) : (
+                        <div className="name-grid">
+                          <div className="input-group">
+                            <input type="text" value={primaryBusinessData.pan} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, pan: e.target.value }))} required placeholder=" " />
+                            <label>PAN Number</label>
+                          </div>
+                          <div className="input-group">
+                            <input type="text" value={primaryBusinessData.gstin} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, gstin: e.target.value }))} required placeholder=" " />
+                            <label>GSTIN</label>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="auth-actions">
+                        <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
+                        <button type="submit" className="primary-btn" disabled={loading}>
+                          Verify Identity
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="signup-inputs-container">
+                        <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business Name</label></div>
+                        <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required placeholder=" " /><label>Registration Number (Optional)</label></div>
+                        <div className="input-group"><input type="text" value={primaryBusinessData.industry} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, industry: e.target.value }))} required placeholder=" " /><label>Industry</label></div>
+                      </div>
+                      <div className="auth-actions">
+                        <button type="button" className="text-btn" onClick={() => setPrimaryBusinessStep(1)}>Back</button>
+                        <button type="submit" className="primary-btn" disabled={loading}>
+                          Next
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="signup-inputs-container">
+                    <div className="input-group"><input type="text" name="businessName" value={formData.businessName} onChange={handleInputChange} required placeholder=" " /><label>Business Name</label></div>
+                    <div className="input-group"><input type="text" name="registrationNumber" value={formData.registrationNumber} onChange={handleInputChange} required placeholder=" " /><label>Business ID Number</label></div>
+                  </div>
+                  <div className="auth-actions">
+                    <button type="button" className="text-btn" onClick={() => setView('signup-selection')}>Back</button>
+                    <button type="submit" className="primary-btn" disabled={loading}>
+                      Next
+                    </button>
+                  </div>
+                </>
+              )}
+            </form>
           )}
 
           {view === 'signup-business-onboarding' && (
