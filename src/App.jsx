@@ -1299,7 +1299,7 @@ function App() {
       if (businessSignupType === 'primary') {
         if (primaryBusinessStep === 1) {
           setLoading(true);
-          const type = primaryBusinessData.size === 'small' ? 'CIN' : 'GSTIN';
+          const type = primaryBusinessData.size === 'small' ? 'GSTIN' : 'LARGE_BUSINESS';
           axios.post(`${API_BASE}/auth/verify-business`, {
             type: type,
             cin: primaryBusinessData.cin,
@@ -3431,7 +3431,7 @@ function App() {
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontSize: '20px', fontWeight: 'bold' }}>S</div>
                         <div>
                           <h4 style={{ margin: '0 0 4px 0', fontSize: '16px' }}>Small Business</h4>
-                          <p style={{ margin: '0', fontSize: '13px', color: 'var(--text-secondary)' }}>Verify instantly using your CIN</p>
+                          <p style={{ margin: '0', fontSize: '13px', color: 'var(--text-secondary)' }}>Verify instantly using your GSTIN</p>
                         </div>
                       </div>
 
@@ -3446,7 +3446,7 @@ function App() {
                         <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--primary-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', fontSize: '20px', fontWeight: 'bold' }}>L</div>
                         <div>
                           <h4 style={{ margin: '0 0 4px 0', fontSize: '16px' }}>Large Business</h4>
-                          <p style={{ margin: '0', fontSize: '13px', color: 'var(--text-secondary)' }}>Verify via GSTIN and PAN details</p>
+                          <p style={{ margin: '0', fontSize: '13px', color: 'var(--text-secondary)' }}>Verify via CIN, PAN, and GSTIN details</p>
                         </div>
                       </div>
                       
@@ -3463,20 +3463,26 @@ function App() {
 
                       {primaryBusinessData.size === 'small' ? (
                         <div className="input-group">
-                          <input type="text" value={primaryBusinessData.cin} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, cin: e.target.value }))} required placeholder=" " />
-                          <label>CIN Number</label>
+                          <input type="text" value={primaryBusinessData.gstin} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, gstin: e.target.value }))} required placeholder=" " />
+                          <label>GSTIN Number</label>
                         </div>
                       ) : (
-                        <div className="name-grid">
-                          <div className="input-group">
-                            <input type="text" value={primaryBusinessData.pan} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, pan: e.target.value }))} required placeholder=" " />
-                            <label>PAN Number</label>
+                        <>
+                          <div className="name-grid">
+                            <div className="input-group">
+                              <input type="text" value={primaryBusinessData.pan} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, pan: e.target.value }))} required placeholder=" " />
+                              <label>PAN Number</label>
+                            </div>
+                            <div className="input-group">
+                              <input type="text" value={primaryBusinessData.gstin} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, gstin: e.target.value }))} required placeholder=" " />
+                              <label>GSTIN</label>
+                            </div>
                           </div>
                           <div className="input-group">
-                            <input type="text" value={primaryBusinessData.gstin} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, gstin: e.target.value }))} required placeholder=" " />
-                            <label>GSTIN</label>
+                            <input type="text" value={primaryBusinessData.cin} onChange={e => setPrimaryBusinessData(prev => ({ ...prev, cin: e.target.value }))} required placeholder=" " />
+                            <label>CIN Number</label>
                           </div>
-                        </div>
+                        </>
                       )}
                       
                       <div className="auth-actions">
