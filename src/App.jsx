@@ -3393,24 +3393,26 @@ function App() {
           {view === 'signup-business' && (
             <form onSubmit={handleGoToMailSignup} className="auth-step">
               
-              <div className="business-signup-tabs" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-                <button
-                  type="button"
-                  onClick={() => setBusinessSignupType('secondary')}
-                  style={{ flex: 1, padding: '16px', borderRadius: '12px', border: businessSignupType === 'secondary' ? '2px solid var(--primary)' : '2px solid var(--border)', background: businessSignupType === 'secondary' ? 'var(--primary-soft)' : 'transparent', color: businessSignupType === 'secondary' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
-                >
-                  <span style={{ fontSize: '16px' }}>Secondary</span>
-                  <span style={{ fontSize: '12px', fontWeight: '400', opacity: 0.8 }}>Standard flow</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBusinessSignupType('primary')}
-                  style={{ flex: 1, padding: '16px', borderRadius: '12px', border: businessSignupType === 'primary' ? '2px solid var(--primary)' : '2px solid var(--border)', background: businessSignupType === 'primary' ? 'var(--primary-soft)' : 'transparent', color: businessSignupType === 'primary' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
-                >
-                  <span style={{ fontSize: '16px' }}>Primary</span>
-                  <span style={{ fontSize: '12px', fontWeight: '400', opacity: 0.8 }}>Verified account</span>
-                </button>
-              </div>
+              {(businessSignupType === 'secondary' || primaryBusinessStep === 0) && (
+                <div className="business-signup-tabs" style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setBusinessSignupType('secondary')}
+                    style={{ flex: 1, padding: '16px', borderRadius: '12px', border: businessSignupType === 'secondary' ? '2px solid var(--primary)' : '2px solid var(--border)', background: businessSignupType === 'secondary' ? 'var(--primary-soft)' : 'transparent', color: businessSignupType === 'secondary' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
+                  >
+                    <span style={{ fontSize: '16px' }}>Secondary</span>
+                    <span style={{ fontSize: '12px', fontWeight: '400', opacity: 0.8 }}>Standard flow</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBusinessSignupType('primary')}
+                    style={{ flex: 1, padding: '16px', borderRadius: '12px', border: businessSignupType === 'primary' ? '2px solid var(--primary)' : '2px solid var(--border)', background: businessSignupType === 'primary' ? 'var(--primary-soft)' : 'transparent', color: businessSignupType === 'primary' ? 'var(--primary)' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}
+                  >
+                    <span style={{ fontSize: '16px' }}>Primary</span>
+                    <span style={{ fontSize: '12px', fontWeight: '400', opacity: 0.8 }}>Verified account</span>
+                  </button>
+                </div>
+              )}
 
               {businessSignupType === 'primary' ? (
                 <>
