@@ -1269,7 +1269,10 @@ function App() {
 
   const handleCreateAccountClick = () => {
     setError('');
-    if (registrationMode === 'business') setView('signup-business');
+    if (registrationMode === 'business') {
+      setSignupType('BUSINESS');
+      setView('signup-business');
+    }
     else if (registrationMode === 'child') {
       setSignupType('CHILD');
       setView('signup-child');
